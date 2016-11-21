@@ -27,6 +27,8 @@ from weakref import \
 
 fc = ct.cdll.LoadLibrary("libfontconfig.so.1")
 
+libc = ct.cdll.LoadLibrary("libc.so.6")
+
 class FC :
     "useful definitions from fontconfig/*.h. You will need to use the constants," \
     " but apart from that, see the more Pythonic wrappers defined outside this" \
@@ -199,7 +201,29 @@ class FC :
     FcResultNoId = 3
     FcResultOutOfMemory = 4
 
-    # TODO: FcValue
+    class Value(ct.Structure) :
+        pass
+    #end Value
+    class ValUnion(ct.Union) :
+        pass
+    #end ValUnion
+    ValUnion._fields_ = \
+        [
+            ("s", Char8),
+            ("i", ct.c_int),
+            ("b", Bool),
+            ("d", ct.c_double),
+            ("m", ct.POINTER(Matrix)),
+            ("c", ct.c_void_p), # ct.POINTER(CharSet)
+            ("f", ct.c_void_p), # ct.POINTER(FT_Face)
+            ("l", ct.c_void_p), # ct.POINTER(LangSet)
+        ]
+    Value._fields_ = \
+        [
+            ("type", ct.c_uint), # Type
+            ("u", ValUnion),
+        ]
+    del ValUnion
 
     class FontSet(ct.Structure) :
         _fields_ = \
@@ -342,6 +366,10 @@ fc.FcInitBringUptoDate.argtypes = ()
 # TODO: lang, objectset/list, atomic, match, matrix, name
 
 # TODO: more pattern/value
+fc.FcNameParse.restype = ct.c_void_p
+fc.FcNameParse.argtypes = (ct.c_char_p,)
+fc.FcNameUnparse.restype = ct.c_void_p
+fc.FcNameUnparse.argtypes = (ct.c_void_p,)
 fc.FcPatternCreate.restype = ct.c_void_p
 fc.FcPatternCreate.argtypes = ()
 fc.FcPatternDuplicate.restype = ct.c_void_p
@@ -372,6 +400,8 @@ fc.FcStrListNext.restype = ct.c_char_p
 fc.FcStrListNext.argtypes = (ct.c_void_p,)
 fc.FcStrListDone.restype = None
 fc.FcStrListDone.argtypes = (ct.c_void_p,)
+
+libc.free.argtypes = (ct.c_void_p,)
 
 class FontconfigError(Exception) :
     "just to identify a Fontconfig-specific error exception."
@@ -834,12 +864,31 @@ class Pattern :
     @classmethod
     def create(celf) :
         return \
-            celf(fc.FcBlanksCreate(), True)
+            celf(fc.FcPatternCreate())
     #end create
+
+    def duplicate(self) :
+        return \
+            type(self)(fc.FcPatternDuplicate(self._fcobj))
+    #end duplicate
 
     def default_substitute(self) :
         fc.FcDefaultSubstitute(self._fcobj)
     #end default_substitute
+
+    @classmethod
+    def name_parse(celf, name) :
+        return \
+            celf(fc.FcNameParse(name.encode()))
+    #end name_parse
+
+    def name_unparse(self) :
+        name = fc.FcNameUnparse(self._fcobj)
+        result = ct.cast(name, ct.c_char_p).value.decode()
+        libc.free(name)
+        return \
+            result
+    #end name_unparse
 
     # TODO: rest of methods
 
