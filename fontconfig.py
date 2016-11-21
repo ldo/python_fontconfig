@@ -519,6 +519,9 @@ def get_langs() :
 
 def lang_normalize(langname) :
     norm = fc.FcLangNormalize(langname.encode())
+    if norm == None :
+        raise FontconfigError("FcLangNormalize failure")
+    #end if
     result = ct.cast(norm, ct.c_char_p).value.decode()
     fc.FcStrFree(norm)
     return \
