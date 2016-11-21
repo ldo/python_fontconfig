@@ -1370,5 +1370,3 @@ class StrList :
     #end from_fc
 
 #end StrList
-
-# TODO: LangSet
