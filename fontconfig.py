@@ -185,9 +185,10 @@ class FC :
             return \
                 celf(xx = 1, yy = 1, xy = 0, yx = 0)
         #end ident
+
     #end Matrix
 
-    # FcObjecType, FcConstant TBD
+    # FcObjectType, FcConstant TBD
 
     # enum FcResult
     ResultMatch = 0
@@ -213,6 +214,10 @@ class FC :
     SetSystem = 0
     SetApplication = 1
 
+    CHARSET_MAP_SIZE = 256 // 32
+    CHARSET_DONE = 0xFFFFFFFF
+    charset_page = Char32 * CHARSET_MAP_SIZE # array of bits
+
 #end FC
 
 #+
@@ -221,10 +226,18 @@ class FC :
 
 # TODO: blanks, cache, config
 
-fc.FcCharSetNew.restype = ct.c_void_p
-fc.FcCharSetNew.argtypes = ()
+fc.FcCharSetCreate.restype = ct.c_void_p
+fc.FcCharSetCreate.argtypes = ()
 fc.FcCharSetDestroy.restype = None
 fc.FcCharSetDestroy.argtypes = (ct.c_void_p,)
+fc.FcCharSetAddChar.restype = FC.Bool
+fc.FcCharSetAddChar.argtypes = (ct.c_void_p, FC.Char32)
+fc.FcCharSetCount.restype = FC.Char32
+fc.FcCharSetCount.argtypes = (ct.c_void_p,)
+fc.FcCharSetFirstPage.restype = FC.Char32
+fc.FcCharSetFirstPage.argtypes = (ct.c_void_p, ct.POINTER(FC.charset_page), ct.POINTER(FC.Char32))
+fc.FcCharSetNextPage.restype = FC.Char32
+fc.FcCharSetNextPage.argtypes = (ct.c_void_p, ct.POINTER(FC.charset_page), ct.POINTER(FC.Char32))
 
 # TODO: print, file/dir, fontset
 
@@ -285,10 +298,39 @@ class CharSet :
         #end if
     #end __del__
 
-    @staticmethod
-    def to_fc(pyset) :
-        TBD
+    @classmethod
+    def to_fc(celf, pyset) :
+        result = fc.FcCharSetCreate()
+        for char in pyset :
+            fc.FcCharSetAddChar(result, char)
+        #end for
+        return \
+            celf(result)
     #end to_fc
+
+    def from_fc(self) :
+        result = set()
+        page = FC.charset_page()
+        retrieve = fc.FcCharSetFirstPage
+        next = FC.Char32()
+        while True :
+            base = retrieve(self._fcobj, ct.byref(page), ct.byref(next))
+            if base == FC.CHARSET_DONE :
+                break
+            for i in range(len(page)) :
+                for j in range(32) :
+                    if 1 << j & page[i] != 0 :
+                        result.add(base + i * 32 + j)
+                    #end if
+                #end for
+            #end for
+            if next == FC.CHARSET_DONE :
+                break
+            retrieve = fc.FcCharSetNextPage
+        #end while
+        return \
+            result
+    #end from_fc
 
 #end CharSet
 
