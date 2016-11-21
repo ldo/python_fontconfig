@@ -646,7 +646,7 @@ class Config :
 
     @sysroot.setter
     def sysroot(self, newroot) :
-        fc.FcConfigSetSysRoot.restype(self._fcobj, newroot.encode())
+        fc.FcConfigSetSysRoot(self._fcobj, newroot.encode())
     #end sysroot
 
 #end Config
