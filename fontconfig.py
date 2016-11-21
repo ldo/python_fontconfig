@@ -529,8 +529,8 @@ def lang_normalize(langname) :
 #end lang_normalize
 
 class LangSet :
-    "wrapper for FcLangSet objects. Do not instantiate directly: use the create, union" \
-    " and difference methods."
+    "wrapper for FcLangSet objects. Do not instantiate directly: use the create, copy," \
+    " union and difference methods."
 
     __slots__ = \
         ( # to forestall typos
