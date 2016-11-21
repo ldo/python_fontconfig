@@ -639,6 +639,8 @@ class Config :
         result = fc.FcConfigGetSysRoot(self._fcobj)
         if bool(result) :
             result = result.decode()
+        else :
+            result = None
         #end if
         return \
             result
