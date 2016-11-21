@@ -254,19 +254,31 @@ fc.FcInitBringUptoDate.argtypes = ()
 
 # TODO: lang, objectset/list, atomic, match, matrix, name, pattern/value, str/utf, xml
 
+class FontconfigError(Exception) :
+    "just to identify a Fontconfig-specific error exception."
+
+    def __init__(self, msg) :
+        self.msg = msg
+    #end __init__
+
+#end FontconfigError
+
 def init() :
-    return \
-        fc.FcInit()
+    if not fc.FcInit() :
+        raise FontconfigError("FcInit failure")
+    #end if
 #end init
 
 def reinitialize() :
-    return \
-        fc.FcInitReinitialize()
+    if not fc.FcInitReinitialize() :
+        raise FontconfigError("FcInitReinitialize failure")
+    #end if
 #end reinitialize
 
 def init_bring_uptodate() :
-    return \
-        fc.FcInitBringUptoDate()
+    if not fc.FcInitBringUptoDate() :
+        raise FontconfigError("FcInitBringUptoDate failure")
+    #end if
 #end init_bring_uptodate
 
 def fini() :
