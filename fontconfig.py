@@ -22,6 +22,8 @@ A ctypes-based binding for the Fontconfig API, for Python
 #-
 
 import ctypes as ct
+from weakref import \
+    WeakValueDictionary
 
 fc = ct.cdll.LoadLibrary("libfontconfig.so.1")
 
@@ -188,7 +190,7 @@ class FC :
 
     #end Matrix
 
-    # FcObjectType, FcConstant TBD
+    # TODO: FcObjectType, FcConstant
 
     # enum FcResult
     ResultMatch = 0
@@ -197,7 +199,19 @@ class FC :
     FcResultNoId = 3
     FcResultOutOfMemory = 4
 
-    # FcValue, FcFontSet, FcObjectSet TBD
+    # TODO: FcValue
+
+    class FontSet(ct.Structure) :
+        _fields_ = \
+            [
+                ("nfont", ct.c_int), # number of used elements in array
+                ("sfont", ct.c_int), # number of allocated elements in array
+                ("fonts", ct.c_void_p), # array of pattern pointers
+            ]
+    #end FontSet
+    FontSetPtr = ct.POINTER(FontSet)
+
+    # TODO: FcObjectSet
 
     # enum FcMatchKind
     FcMatchPattern = 0
@@ -224,7 +238,68 @@ class FC :
 # Routine arg/result types
 #-
 
-# TODO: blanks, cache, config
+fc.FcBlanksCreate.restype = ct.c_void_p
+fc.FcBlanksCreate.argtypes = ()
+fc.FcBlanksDestroy.restype = None
+fc.FcBlanksDestroy.argtypes = (ct.c_void_p,)
+fc.FcBlanksAdd.restype = FC.Bool
+fc.FcBlanksAdd.argtypes = (ct.c_void_p, ct.c_uint)
+fc.FcBlanksIsMember.restype = FC.Bool
+fc.FcBlanksIsMember.argtypes = (ct.c_void_p, ct.c_uint)
+
+# TODO: cache
+
+fc.FcConfigHome.restype = ct.c_char_p
+fc.FcConfigHome.argtypes = ()
+fc.FcConfigEnableHome.restype = FC.Bool
+fc.FcConfigEnableHome.argtypes = (FC.Bool,)
+fc.FcConfigFilename.restype = ct.c_char_p
+fc.FcConfigFilename.argtypes = (ct.c_char_p,)
+fc.FcConfigCreate.restype = ct.c_void_p
+fc.FcConfigCreate.argtypes = ()
+fc.FcConfigReference.restype = ct.c_void_p
+fc.FcConfigReference.argtypes = (ct.c_void_p,)
+fc.FcConfigDestroy.restype = None
+fc.FcConfigDestroy.argtypes = (ct.c_void_p,)
+fc.FcConfigSetCurrent.restype = FC.Bool
+fc.FcConfigSetCurrent.argtypes = (ct.c_void_p,)
+fc.FcConfigGetCurrent.restype = ct.c_void_p
+fc.FcConfigGetCurrent.argtypes = ()
+fc.FcConfigUptoDate.restype = FC.Bool
+fc.FcConfigUptoDate.argtypes = (ct.c_void_p,)
+fc.FcConfigBuildFonts.restype = FC.Bool
+fc.FcConfigBuildFonts.argtypes = (ct.c_void_p,)
+fc.FcConfigGetFontDirs.restype = ct.c_void_p
+fc.FcConfigGetFontDirs.argtypes = (ct.c_void_p,)
+fc.FcConfigGetConfigDirs.restype = ct.c_void_p
+fc.FcConfigGetConfigDirs.argtypes = (ct.c_void_p,)
+fc.FcConfigGetConfigFiles.restype = ct.c_void_p
+fc.FcConfigGetConfigFiles.argtypes = (ct.c_void_p,)
+# fc.FcConfigGetCache -- deprecated
+fc.FcConfigGetBlanks.restype = ct.c_void_p
+fc.FcConfigGetBlanks.argtypes = (ct.c_void_p,)
+fc.FcConfigGetCacheDirs.restype = ct.c_void_p
+fc.FcConfigGetCacheDirs.argtypes = (ct.c_void_p,)
+fc.FcConfigGetRescanInterval.restype = ct.c_int
+fc.FcConfigGetRescanInterval.argtypes = (ct.c_void_p,)
+fc.FcConfigSetRescanInterval.restype = FC.Bool
+fc.FcConfigSetRescanInterval.argtypes = (ct.c_void_p,)
+fc.FcConfigGetFonts.restype = ct.c_void_p
+fc.FcConfigGetFonts.argtypes = (ct.c_void_p, ct.c_uint)
+fc.FcConfigAppFontAddFile.restype = FC.Bool
+fc.FcConfigAppFontAddFile.argtypes = (ct.c_void_p, ct.c_char_p)
+fc.FcConfigAppFontAddDir.restype = FC.Bool
+fc.FcConfigAppFontAddDir.argtypes = (ct.c_void_p, ct.c_char_p)
+fc.FcConfigAppFontClear.restype = None
+fc.FcConfigAppFontClear.argtypes = (ct.c_void_p,)
+fc.FcConfigSubstituteWithPat.restype = FC.Bool
+fc.FcConfigSubstituteWithPat.argtypes = (ct.c_void_p, ct.c_void_p, ct.c_void_p, ct.c_uint)
+fc.FcConfigSubstitute.restype = FC.Bool
+fc.FcConfigSubstitute.argtypes = (ct.c_void_p, ct.c_void_p, ct.c_uint)
+fc.FcConfigGetSysRoot.restype = ct.c_char_p
+fc.FcConfigGetSysRoot.restype.argtypes = (ct.c_void_p,)
+fc.FcConfigSetSysRoot.restype = None
+fc.FcConfigSetSysRoot.argtypes = (ct.c_void_p, ct.c_char_p)
 
 fc.FcCharSetCreate.restype = ct.c_void_p
 fc.FcCharSetCreate.argtypes = ()
@@ -239,7 +314,14 @@ fc.FcCharSetFirstPage.argtypes = (ct.c_void_p, ct.POINTER(FC.charset_page), ct.P
 fc.FcCharSetNextPage.restype = FC.Char32
 fc.FcCharSetNextPage.argtypes = (ct.c_void_p, ct.POINTER(FC.charset_page), ct.POINTER(FC.Char32))
 
-# TODO: print, file/dir, fontset
+# TODO: print, file/dir
+
+fc.FcFontSetCreate.restype = ct.c_void_p
+fc.FcFontSetCreate.argtypes = ()
+fc.FcFontSetDestroy.restype = None
+fc.FcFontSetDestroy.argtypes = (ct.c_void_p,)
+fc.FcFontSetAdd.restype = FC.Bool
+fc.FcFontSetAdd.argtypes = (ct.c_void_p, ct.c_void_p)
 
 fc.FcInit.restype = FC.Bool
 fc.FcInit.argtypes = ()
@@ -252,7 +334,39 @@ fc.FcInitReinitialize.argtypes = ()
 fc.FcInitBringUptoDate.restype = FC.Bool
 fc.FcInitBringUptoDate.argtypes = ()
 
-# TODO: lang, objectset/list, atomic, match, matrix, name, pattern/value, str/utf, xml
+# TODO: lang, objectset/list, atomic, match, matrix, name
+
+# TODO: more pattern/value
+fc.FcPatternCreate.restype = ct.c_void_p
+fc.FcPatternCreate.argtypes = ()
+fc.FcPatternDuplicate.restype = ct.c_void_p
+fc.FcPatternDuplicate.argtypes = (ct.c_void_p,)
+fc.FcPatternReference.restype = ct.c_void_p
+fc.FcPatternReference.argtypes = (ct.c_void_p,)
+fc.FcPatternDestroy.restype = None
+fc.FcPatternDestroy.argtypes = (ct.c_void_p,)
+
+# TODO: str/utf, xml
+
+fc.FcStrCopyFilename.restype = ct.c_char_p
+fc.FcStrCopyFilename.argtypes = (ct.c_char_p,)
+
+fc.FcStrSetCreate.restype = ct.c_void_p
+fc.FcStrSetCreate.argtypes = ()
+fc.FcStrSetAdd.restype = FC.Bool
+fc.FcStrSetAdd.argtypes = (ct.c_void_p, ct.c_char_p)
+# can’t (easily) use FcStrSetAddFilename, caller just has to use
+# copy_filename (below) and add result to Python set of strings
+fc.FcStrSetDestroy.restype = None
+fc.FcStrSetDestroy.argtypes = (ct.c_void_p,)
+fc.FcStrListCreate.restype = ct.c_void_p
+fc.FcStrListCreate.argtypes = (ct.c_void_p,)
+fc.FcStrListFirst.restype = None
+fc.FcStrListFirst.argtypes = (ct.c_void_p,)
+fc.FcStrListNext.restype = ct.c_char_p
+fc.FcStrListNext.argtypes = (ct.c_void_p,)
+fc.FcStrListDone.restype = None
+fc.FcStrListDone.argtypes = (ct.c_void_p,)
 
 class FontconfigError(Exception) :
     "just to identify a Fontconfig-specific error exception."
@@ -264,19 +378,19 @@ class FontconfigError(Exception) :
 #end FontconfigError
 
 def init() :
-    if not fc.FcInit() :
+    if fc.FcInit() == 0 :
         raise FontconfigError("FcInit failure")
     #end if
 #end init
 
 def reinitialize() :
-    if not fc.FcInitReinitialize() :
+    if fc.FcInitReinitialize() == 0 :
         raise FontconfigError("FcInitReinitialize failure")
     #end if
 #end reinitialize
 
 def init_bring_uptodate() :
-    if not fc.FcInitBringUptoDate() :
+    if fc.FcInitBringUptoDate() == 0 :
         raise FontconfigError("FcInitBringUptoDate failure")
     #end if
 #end init_bring_uptodate
@@ -289,6 +403,253 @@ def get_version() :
     return \
         fc.FcGetVersion()
 #end get_version
+
+class Blanks :
+    "wrapper for FcBlanks objects. Do not instantiate directly: use the create method.\n" \
+    "\n" \
+    "Note the methods available are very limited, e.g. no enumeration of members or" \
+    " determination of cardinality."
+
+    __slots__ = \
+        ( # to forestall typos
+            "_fcobj",
+            "_created",
+            "__weakref__",
+        )
+
+    _instances = WeakValueDictionary()
+
+    def __new__(celf, _fcobj, _created) :
+        self = celf._instances.get(_fcobj)
+        if self == None :
+            self = super().__new__(celf)
+            self._fcobj = _fcobj
+            self._created = _created
+            celf._instances[_fcobj] = self
+        else :
+            assert self._created == _created
+        #end if
+        return \
+            self
+    #end __new__
+
+    def __del__(self) :
+        if fc != None and self._fcobj != None :
+            if self._created :
+                fc.FcBlanksDestroy(self._fcobj)
+            #end if
+            self._fcobj = None
+        #end if
+    #end __del__
+
+    @classmethod
+    def create(celf) :
+        return \
+            celf(fc.FcBlanksCreate(), True)
+    #end create
+
+    def add(self, elt) :
+        if fc.FcBlanksAdd(self._fcobj, elt) == 0 :
+            raise FontconfigError("FcBlanksAdd failure")
+        #end if
+    #end add
+
+    def __contains__(self, elt) :
+        return \
+            fc.FcBlanksIsMember(self._fcobj, elt) != 0
+    #end __contains__
+
+#end Blanks
+
+class Config :
+    "high-level wrapper around FcConfig objects. Do not instantiate directly;" \
+    " use the create method."
+
+    __slots__ = \
+        ( # to forestall typos
+            "_fcobj",
+            "__weakref__",
+        )
+
+    _instances = WeakValueDictionary()
+
+    def __new__(celf, _fcobj) :
+        self = celf._instances.get(_fcobj)
+        if self == None :
+            self = super().__new__(celf)
+            self._fcobj = _fcobj
+            celf._instances[_fcobj] = self
+        else :
+            fc.FcConfigDestroy(self._fcobj)
+              # lose extra reference created by caller
+        #end if
+        return \
+            self
+    #end __new__
+
+    def __del__(self) :
+        if fc != None and self._fcobj != None :
+            fc.FcConfigDestroy(self._fcobj)
+            self._fcobj = None
+        #end if
+    #end __del__
+
+    @staticmethod
+    def home() :
+        return \
+            fc.FcConfigHome().decode() # automatically stops at NUL?
+    #end home
+
+    @staticmethod
+    def enable_home(enable) :
+        return \
+            fc.FcConfigEnableHome(int(enable)) != 0
+    #end enable_home
+
+    @staticmethod
+    def file_name(name) :
+        return \
+            fc.FcConfigFilename(name.encode()).decode() # automatically stops at NUL?
+    #end file_name
+
+    @classmethod
+    def create(celf) :
+        return \
+            celf(fc.FcConfigCreate())
+    #end create
+
+    def set_current(self) :
+        if fc.FcConfigSetCurrent(self._fcobj) == 0 :
+            raise FontconfigError("FcConfigSetCurrent failure")
+        #end if
+    #end set_current
+
+    @classmethod
+    def get_current(celf) :
+        return \
+            celf(fc.FcConfigReference(fc.FcConfigGetCurrent()))
+    #end get_current
+
+    @property
+    def uptodate(self) :
+        return \
+            fc.FcConfigUptoDate(self._fcobj) != 0
+    #end uptodate
+
+    def build_fonts(self) :
+        if fc.FcConfigBuildFonts(self._fcobj) == 0 :
+            raise FontconfigError("FcConfigBuildFonts failure")
+        #end if
+    #end build_fonts
+
+    @property
+    def font_dirs(self) :
+        return \
+            StrList(fc.FcConfigGetFontDirs(self._fcobj)).from_fc()
+    #end font_dirs
+
+    @property
+    def config_dirs(self) :
+        return \
+            StrList(fc.FcConfigGetConfigDirs(self._fcobj)).from_fc()
+    #end config_dirs
+
+    @property
+    def config_files(self) :
+        return \
+            StrList(fc.FcConfigGetConfigFiles(self._fcobj)).from_fc()
+    #end config_files
+
+    @property
+    def blanks(self) :
+        return \
+            Blanks(fc.FcConfigGetBlanks(self._fcobj, False))
+    #end blanks
+
+    @property
+    def cache_dirs(self) :
+        return \
+            StrList(fc.FcConfigGetCacheDirs(self._fcobj)).from_fc()
+    #end cache_dirs
+
+    @property
+    def rescan_interval(self) :
+        return \
+            fc.FcConfigGetRescanInterval(self._fcobj)
+    #end rescan_interval
+
+    @rescan_interval.setter
+    def rescan_interval(self, interval) :
+        if fc.FcConfigSetRescanInterval(self._fcobj, interval) == 0 :
+            raise FontconfigError("FcConfigSetRescanInterval failure")
+        #end if
+    #end rescan_interval
+
+    def get_fonts(self, set_name) :
+        "returns one of the two sets of fonts, where set_name is either FC.SetSystem" \
+        " or FC.SetApplication."
+        fontset = fc.FcConfigGetFonts(self._fcobj, set_name)
+        if fontset != None :
+            result = FontSet(fontset, False).from_fc()
+        else :
+            result = ()
+        #end if
+        return \
+            result
+    #end get_fonts
+
+    def app_font_add_file(self, filename) :
+        if fc.FcConfigAppFontAddFile(self._fcobj, filename.encode()) == 0 :
+            raise FontconfigError("FcConfigAppFontAddFile failure")
+        #end if
+    #end app_font_add_file
+
+    def app_font_add_dir(self, dirname) :
+        if fc.FcConfigAppFontAddDir(self._fcobj, dirname.encode()) == 0 :
+            raise FontconfigError("FcConfigAppFontAddDir failure")
+        #end if
+    #end app_font_add_dir
+
+    def app_font_clear(self) :
+        fc.FcConfigAppFontClear(self._fcobj)
+    #end app_font_clear
+
+    def substitute_with_pat(self, p, p_pat, kind) :
+        "kind must be FC.FcMatchPattern, FC.FcMatchFont or FC.FcMatchScan."
+        if not isinstance(p, Pattern) or not isinstance(p_pat, Pattern) :
+            raise TypeError("second and third args must be Patterns")
+        #end if
+        if fc.FcConfigSubstituteWithPat(self._fcobj, p._fcobj, p_pat._fcobj, kind) == 0 :
+            raise FontconfigError("FcConfigSubstituteWithPat failure")
+        #end if
+    #end substitute_with_pat
+
+    def substitute(self, p, kind) :
+        "kind must be FC.FcMatchPattern, FC.FcMatchFont or FC.FcMatchScan."
+        if not isinstance(p, Pattern) :
+            raise TypeError("second arg must be Pattern")
+        #end if
+        if fc.FcConfigSubstitute(self._fcobj, p._fcobj, kind) == 0 :
+            raise FontconfigError("FcConfigSubstitute failure")
+        #end if
+    #end substitute
+
+    @property
+    def sysroot(self) :
+        result = fc.FcConfigGetSysRoot(self._fcobj)
+        if bool(result) :
+            result = result.decode()
+        #end if
+        return \
+            result
+    #end sysroot
+
+    @sysroot.setter
+    def sysroot(self, newroot) :
+        fc.FcConfigSetSysRoot.restype(self._fcobj, newroot.encode())
+    #end sysroot
+
+#end Config
 
 class CharSet :
     "wrapper around FcCharSet objects. For internal use only: all relevant" \
@@ -346,6 +707,207 @@ class CharSet :
 
 #end CharSet
 
-# Pattern, LangSet TBD
+def copy_filename(s) :
+    result = fc.FcStrCopyFilename(s.encode())
+    if not bool(result) :
+        raise FontconfigError("FcStrCopyFilename failure")
+    #end if
+    return \
+        result.decode() # automatically stops at NUL?
+#end copy_filename
 
-# more TBD
+class FontSet :
+
+    __slots__ = \
+        ( # to forestall typos
+            "_fcobj",
+            "_created",
+            "__weakref__",
+        )
+
+    _instances = WeakValueDictionary()
+
+    def __new__(celf, _fcobj, _created) :
+        self = celf._instances.get(_fcobj)
+        if self == None :
+            self = super().__new__(celf)
+            self._fcobj = _fcobj
+            self._created = _created
+            celf._instances[_fcobj] = self
+        else :
+            assert self._created == _created
+        #end if
+        return \
+            self
+    #end __new__
+
+    def __del__(self) :
+        if fc != None and self._fcobj != None :
+            if self._created :
+                fc.FcFontSetDestroy(self._fcobj)
+            #end if
+            self._fcobj = None
+        #end if
+    #end __del__
+
+    @classmethod
+    def create(celf) :
+        return \
+            celf(fc.FcFontSetCreate(), True)
+    #end create
+
+    @classmethod
+    def to_fc(celf, patset) :
+        result = celf.create()
+        for pat in patset :
+            if not isinstance(pat, Pattern) :
+                raise TypeError("element of patset is not a Pattern")
+            #end if
+            if fc.FcFontSetAdd(result._fcobj, pat._fcobj) == 0 :
+                raise FontconfigError("FcFontSetAdd failure")
+            #end if
+        #end for
+        return \
+            result
+    #end to_fc
+
+    def each(self) :
+        f = ct.cast(self._fcobj, ct.POINTER(FC.FontSet))
+        pats = ct.cast(f[0].fonts, ct.POINTER(ct.c_void_p))
+        for i in range(f[0].nfont) :
+            yield Pattern(pats[i])
+        #end for
+    #end each
+
+    def from_fc(self) :
+        return \
+            tuple(self.each())
+    #end from_fc
+
+#end FontSet
+
+class Pattern :
+    "wrapper around FcPattern objects. Do not instantiate directly; use create" \
+    " method."
+
+    __slots__ = \
+        ( # to forestall typos
+            "_fcobj",
+            "__weakref__",
+        )
+
+    _instances = WeakValueDictionary()
+
+    def __new__(celf, _fcobj) :
+        self = celf._instances.get(_fcobj)
+        if self == None :
+            self = super().__new__(celf)
+            self._fcobj = _fcobj
+            celf._instances[_fcobj] = self
+        else :
+            fc.FcPatternDestroy(self._fcobj)
+              # lose extra reference created by caller
+        #end if
+        return \
+            self
+    #end __new__
+
+    def __del__(self) :
+        if fc != None and self._fcobj != None :
+            fc.FcPatternDestroy(self._fcobj)
+            self._fcobj = None
+        #end if
+    #end __del__
+
+    @classmethod
+    def create(celf) :
+        return \
+            celf(fc.FcBlanksCreate(), True)
+    #end create
+
+    # TODO: rest of methods
+
+#end Pattern
+
+class StrSet :
+    "wrapper around FcStrSet objects. For internal use only: all relevant" \
+    " functions will pass and return Python sets."
+
+    __slots__ = \
+        ( # to forestall typos
+            "_fcobj",
+        )
+
+    def __init__(self, _fcobj) :
+        self._fcobj = _fcobj
+    #end __init__
+
+    def __del__(self) :
+        if fc != None and self._fcobj != None :
+            fc.FcStrSetDestroy(self._fcobj)
+            self._fcobj = None
+        #end if
+    #end __del__
+
+    @classmethod
+    def to_fc(celf, pyset) :
+        result = fc.FcStrSetCreate()
+        for s in pyset :
+            fc.FcStrSetAdd(result, s)
+        #end for
+        return \
+            celf(result)
+    #end to_fc
+
+    def from_fc(self) :
+        return \
+            set(StrList.create(self).each())
+    #end from_fc
+
+#end StrSet
+
+class StrList :
+    "wrapper around FcCharSet objects. For internal use only: all relevant" \
+    " functions will pass and return sequences of Python strings."
+
+    __slots__ = \
+        ( # to forestall typos
+            "_fcobj",
+        )
+
+    def __init__(self, _fcobj) :
+        self._fcobj = _fcobj
+    #end __init__
+
+    def __del__(self) :
+        if fc != None and self._fcobj != None :
+            fc.FcStrListDone(self._fcobj)
+            self._fcobj = None
+        #end if
+    #end __del__
+
+    @classmethod
+    def create(celf, strset) :
+        return \
+            celf(fc.FcStrListCreate(strset._fcobj))
+    #end create
+
+    def each(self) :
+        "yields each string in the list in turn."
+        fc.FcStrListFirst(self._fcobj)
+        while True :
+            s = fc.FcStrListNext(self._fcobj)
+            if s == None :
+                break
+            yield s.decode()
+        #end while
+    #end each
+
+    def from_fc(self) :
+        return \
+            tuple(self.each())
+    #end from_fc
+
+#end StrList
+
+# TODO: Pattern, LangSet
