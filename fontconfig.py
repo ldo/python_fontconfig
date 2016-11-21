@@ -209,7 +209,7 @@ class FC :
     #end ValUnion
     ValUnion._fields_ = \
         [
-            ("s", Char8),
+            ("s", ct.c_char_p),
             ("i", ct.c_int),
             ("b", Bool),
             ("d", ct.c_double),
@@ -353,6 +353,9 @@ fc.FcDefaultSubstitute.argtypes = (ct.c_void_p,)
 
 # TODO: print, file/dir
 
+fc.FcFreeTypeQuery.restype = ct.c_void_p
+fc.FcFreeTypeQuery.argtypes = (ct.c_char_p, ct.c_int, ct.c_void_p, ct.POINTER(ct.c_int))
+
 fc.FcFontSetCreate.restype = ct.c_void_p
 fc.FcFontSetCreate.argtypes = ()
 fc.FcFontSetDestroy.restype = None
@@ -371,7 +374,38 @@ fc.FcInitReinitialize.argtypes = ()
 fc.FcInitBringUptoDate.restype = FC.Bool
 fc.FcInitBringUptoDate.argtypes = ()
 
-# TODO: lang
+fc.FcGetLangs.restype = ct.c_void_p
+fc.FcGetLangs.argtypes = ()
+fc.FcLangNormalize.restype = ct.c_void_p
+fc.FcLangNormalize.argtypes = (ct.c_char_p,)
+fc.FcLangGetCharSet.restype = ct.c_void_p
+fc.FcLangGetCharSet.argtypes = (ct.c_char_p,)
+fc.FcLangSetCreate.restype = ct.c_void_p
+fc.FcLangSetCreate.argtypes = ()
+fc.FcLangSetDestroy.restype = None
+fc.FcLangSetDestroy.argtypes = (ct.c_void_p,)
+fc.FcLangSetCopy.restype = ct.c_void_p
+fc.FcLangSetCopy.argtypes = (ct.c_void_p,)
+fc.FcLangSetAdd.restype = FC.Bool
+fc.FcLangSetAdd.argtypes = (ct.c_void_p, ct.c_char_p)
+fc.FcLangSetDel.restype = FC.Bool
+fc.FcLangSetDel.argtypes = (ct.c_void_p, ct.c_char_p)
+fc.FcLangSetHasLang.restype = ct.c_uint
+fc.FcLangSetHasLang.argtypes = (ct.c_void_p, ct.c_char_p)
+fc.FcLangSetCompare.restype = ct.c_uint
+fc.FcLangSetCompare.argtypes = (ct.c_void_p, ct.c_void_p)
+fc.FcLangSetContains.restype = FC.Bool
+fc.FcLangSetContains.argtypes = (ct.c_void_p, ct.c_void_p)
+fc.FcLangSetEqual.restype = FC.Bool
+fc.FcLangSetEqual.argtypes = (ct.c_void_p, ct.c_void_p)
+fc.FcLangSetHash.restype = ct.c_uint
+fc.FcLangSetHash.argtypes = (ct.c_void_p,)
+fc.FcLangSetGetLangs.restype = ct.c_void_p
+fc.FcLangSetGetLangs.argtypes = (ct.c_void_p,)
+fc.FcLangSetUnion.restype = ct.c_void_p
+fc.FcLangSetUnion.argtypes = (ct.c_void_p, ct.c_void_p)
+fc.FcLangSetSubtract.restype = ct.c_void_p
+fc.FcLangSetSubtract.argtypes = (ct.c_void_p, ct.c_void_p)
 
 fc.FcObjectSetCreate.restype = ct.c_void_p
 fc.FcObjectSetCreate.argtypes = ()
@@ -379,8 +413,18 @@ fc.FcObjectSetAdd.restype = FC.Bool
 fc.FcObjectSetAdd.argtypes = (ct.c_void_p, ct.c_char_p)
 fc.FcObjectSetDestroy.restype = None
 fc.FcObjectSetDestroy.argtypes = (ct.c_void_p,)
+fc.FcFontSetList.restype = ct.c_void_p
+fc.FcFontSetList.argtypes = (ct.c_void_p, ct.c_void_p, ct.c_int, ct.c_void_p, ct.c_void_p)
+fc.FcFontList.restype = ct.c_void_p
+fc.FcFontList.argtypes = (ct.c_void_p, ct.c_void_p, ct.c_void_p)
 
-# TODO: atomic, match, matrix, name
+# TODO: atomic, match
+
+# probably don’t need rest of matrix stuff
+fc.FcMatrixCopy.restype = ct.c_void_p
+fc.FcMatrixCopy.argtypes = (ct.c_void_p,)
+
+# TODO: name
 
 # TODO: more pattern/value
 fc.FcNameParse.restype = ct.c_void_p
@@ -393,10 +437,22 @@ fc.FcPatternDuplicate.restype = ct.c_void_p
 fc.FcPatternDuplicate.argtypes = (ct.c_void_p,)
 fc.FcPatternReference.restype = ct.c_void_p
 fc.FcPatternReference.argtypes = (ct.c_void_p,)
+fc.FcValueDestroy.restype = None
+fc.FcValueDestroy.argtypes = (FC.Value,)
+fc.FcValueSave.restype = FC.Value
+fc.FcValueSave.argtypes = (FC.Value,)
 fc.FcPatternDestroy.restype = None
 fc.FcPatternDestroy.argtypes = (ct.c_void_p,)
+fc.FcPatternFilter.restype = ct.c_void_p
+fc.FcPatternFilter.argtypes = (ct.c_void_p, ct.c_void_p)
 
-# TODO: str/utf, xml
+# probably don’t need rest of str/utf stuff
+fc.FcStrCopy.restype = ct.c_char_p
+fc.FcStrCopy.argtypes = (ct.c_void_p,)
+fc.FcStrFree.restype = None
+fc.FcStrFree.argtypes = (ct.c_void_p,)
+
+# TODO: xml
 
 fc.FcStrCopyFilename.restype = ct.c_char_p
 fc.FcStrCopyFilename.argtypes = (ct.c_char_p,)
@@ -455,6 +511,131 @@ def get_version() :
     return \
         fc.FcGetVersion()
 #end get_version
+
+def get_langs() :
+    return \
+        StrSet(fc.FcGetLangs()).from_fc()
+#end get_langs
+
+def lang_normalize(langname) :
+    norm = fc.FcLangNormalize(langname.encode())
+    result = ct.cast(norm, ct.c_char_p).value.decode()
+    fc.FcStrFree(norm)
+    return \
+        result
+#end lang_normalize
+
+class LangSet :
+    "wrapper for FcLangSet objects. Do not instantiate directly: use the create, union" \
+    " and difference methods."
+
+    __slots__ = \
+        ( # to forestall typos
+            "_fcobj",
+        )
+
+    def __init__(self, _fcobj) :
+        self._fcobj = _fcobj
+    #end __init__
+
+    def __del__(self) :
+        if fc != None and self._fcobj != None :
+            fc.FcLangSetDestroy(self._fcobj)
+            self._fcobj = None
+        #end if
+    #end __del__
+
+    @classmethod
+    def create(celf) :
+        return \
+            celf(fc.FcLangSetCreate())
+    #end create
+
+    def copy(self) :
+        return \
+            celf(fc.FcLangSetCopy(self._fcobj))
+    #end copy
+
+    def add(self, lang) :
+        if fc.FcLangSetAdd(self._fcobj, lang.encode()) == 0 :
+            raise FontconfigError("FcLangSetAdd failure")
+        #end if
+    #end add
+
+    def remove(self, lang) :
+        if fc.FcLangSetDel(self._fcobj, lang.encode()) == 0 :
+            raise FontconfigError("FcLangSetDel failure")
+        #end if
+    #end remove
+
+    def has(self, lang) :
+        "returns one of FcLangEqual, FcLangDifferentCountry" \
+        "/FcLangDifferentTerritory or FcLangDifferentLang."
+        return \
+            fc.FcLangSetHasLang(self._fcobj, lang.encode())
+    #end has
+
+    def compare(self, other) :
+        "returns one of FcLangEqual, FcLangDifferentCountry" \
+        "/FcLangDifferentTerritory or FcLangDifferentLang."
+        if not isinstance(other, LangSet) :
+            raise TypeError("other must also be a LangSet")
+        #end if
+        return \
+            fc.FcLangSetCompare(self._fcobj, other._fcobj)
+    #end compare
+
+    def issuperset(self, other) :
+        if not isinstance(other, LangSet) :
+            raise TypeError("other must also be a LangSet")
+        #end if
+        return \
+            fc.FcLangSetContains(self._fcobj, other._fcobj) != 0
+    #end issuperset
+    __ge__ = issuperset # allow ”>=” just like regular Python sets
+
+    def __eq__(self, other) :
+        if not isinstance(other, LangSet) :
+            raise TypeError("other must also be a LangSet")
+        #end if
+        return \
+            fc.FcLangSetEqual(self._fcobj, other._fcobj) != 0
+    #end __eq__
+
+    def hash(self) :
+        return \
+            fc.FcLangSetHash(self._fcobj)
+    #end hash
+    # __hash__ = hash # should I do this?
+
+    @property
+    def langs(self) :
+        return \
+            StrSet(fc.FcLangSetGetLangs(self._fcobj)).from_fc()
+    #end langs
+
+    # could I support __len__ in a roundabout way, by calling FcLangSetGetLangs
+    # and getting the length of that?
+
+    def union(self, other) :
+        if not isinstance(other, LangSet) :
+            raise TypeError("other must also be a LangSet")
+        #end if
+        return \
+            type(self)(fc.FcLangSetUnion(self._fcobj, other._fcobj))
+    #end union
+    __or__ = union
+
+    def difference(self, other) :
+        if not isinstance(other, LangSet) :
+            raise TypeError("other must also be a LangSet")
+        #end if
+        return \
+            type(self)(fc.FcLangSetSubtract(self._fcobj, other._fcobj))
+    #end difference
+    __sub__ = difference
+
+#end LangSet
 
 class ObjectSet :
     "wrapper around FcObjectSet objects. For internal use only: all relevant" \
@@ -748,6 +929,39 @@ class Config :
         fc.FcConfigSetSysRoot(self._fcobj, newroot.encode())
     #end sysroot
 
+    def font_set_list(self, sets, pat, props) :
+        if not isinstance(pat, Pattern) :
+            raise TypeError("pat must be a pattern")
+        #end if
+        nr_sets = len(sets)
+        f_sets = tuple(FontSet.to_fc(s) for s in sets)
+        c_sets = (ct.c_void_p * nr_sets)(s._fcobj for s in f_sets)
+        fs = FontSet.to_fc(props)
+        result = fc.FcFontSetList \
+          (
+            self._fcobj,
+            ct.cast(c_sets, ct.c_void_p),
+            nr_sets,
+            pat._fcobj,
+            ct.fs._fcobj
+          )
+        return \
+            FontSet(result, True).from_fc()
+    #end font_set_list
+
+    def font_list(self, pat, props) :
+        "finds all fonts matching Pattern pat, and returns a tuple of" \
+        " Patterns describing them, containing only the properties named" \
+        " in props."
+        if not isinstance(pat, Pattern) :
+            raise TypeError("pat must be a pattern")
+        #end if
+        fs = FontSet.to_fc(props)
+        result = fc.FcFontList(self._fcobj, pat._fcobj, fs._fcobj)
+        return \
+            FontSet(result, True).from_fc()
+    #end font_list
+
 #end Config
 
 class CharSet :
@@ -892,6 +1106,95 @@ class FontSet :
 
 #end FontSet
 
+class Matrix :
+    "Python represention of FcMatrix objects."
+
+    __slots__ = ("xx", "xy", "yx", "yy") # to forestall typos
+
+    @classmethod
+    def from_fc(celf, m) :
+        return \
+            celf(xx = m.xx, xy = m.xy, yx = m.yx, yy = m.yy)
+    #end from_fc
+
+    def to_fc(m) :
+        return \
+            FC.Matrix(xx = m.xx, xy = m.xy, yx = m.yx, yy = m.yy)
+    #end to_fc
+
+#end Matrix
+
+class Value :
+    "wrapper around FcValue objects. For internal use only: all relevant" \
+    " functions will pass and return regular Python objects."
+
+    __slots__ = \
+        ( # to forestall typos
+            "_fcobj",
+        )
+
+    def __init__(self, _fcobj) :
+        self._fcobj = _fcobj
+    #end __init__
+
+    def __del__(self) :
+        if fc != None and self._fcobj != None :
+            fc.FcValueDestroy(self._fcobj)
+            self._fcobj = None
+        #end if
+    #end __del__
+
+    conv_from_fc = \
+        {
+            FC.TypeInteger : lambda v : int(v.i),
+            FC.TypeDouble : lambda v : float(v.d),
+            FC.TypeString : lambda v : v.s.value.decode(),
+            FC.TypeBool : lambda v : v.b != 0,
+            FC.TypeMatrix : lambda v : Matrix.from_fc(v.m.contents),
+            FC.TypeCharSet : lambda v : CharSet(v.c).from_fc(),
+            FC.TypeFTFace : lambda v : v.f, # leave as c_void_p for now
+            FC.TypeLangSet : lambda v : LangSet(v.l).from_fc(),
+        }
+
+    conv_to_fc = \
+        {
+            int : (FC.TypeInteger, "i", lambda x : x),
+            float : (FC.TypeDouble, "d", lambda x : x),
+            str : (FC.TypeString, "s", lambda s : fc.FcStrCopy(s.encode())),
+              # allocates memory!
+            bool : (FC.TypeBool, "b", int),
+            Matrix : (FC.TypeMatrix, "m", lambda m : fc.FcMatrixCopy(ct.byref(m.to_fc()))),
+              # allocates memory!
+            CharSet : (FC.TypeCharSet, "c", lambda s : CharSet.to_fc(s)),
+              # allocates memory!
+            # FTFace handled specially
+            LangSet : (FC.TypeLangSet, "l", lambda l : l._fcobj),
+        }
+
+    @classmethod
+    def from_fc(celf, v) :
+        if v.type not in celf.conv_from_fc :
+            raise TypeError("cannot convert FC.Value type %d" % v.type)
+        #end if
+        return \
+            celf.conv_from_fc[v.type](v.u)
+    #end from_fc
+
+    @classmethod
+    def to_fc(celf, x) :
+        if type(x) not in celf.conv_to_fc :
+            raise TypeError("cannot convert %s type to FC.Value" % type(x).__name__)
+        #end if
+        conv = celf.conv_to_fc(type(x))
+        result = FC.Value()
+        result.type = conv[0]
+        setattr(result.u, conv[1], conv[2](x))
+        return \
+            celf(result)
+    #end to_fc
+
+#end Value
+
 class Pattern :
     "wrapper around FcPattern objects. Do not instantiate directly; use create" \
     " method."
@@ -931,6 +1234,23 @@ class Pattern :
             celf(fc.FcPatternCreate())
     #end create
 
+    @classmethod
+    def freetype_query(celf, filename, id, blanks) :
+        if blanks != None and not isinstance(blanks, Blanks) :
+            raise TypeError("blanks must be a Blanks")
+        #end if
+        count = ct.c_int()
+        pat = fc.FcFreeTypeQuery \
+          (
+            filename.encode(),
+            id,
+            (lambda : None, lambda : blanks._fcobj)[blanks != None](),
+            ct.byref(count)
+          )
+        return \
+            (celf(pat), count.value)
+    #end freetype_query
+
     def duplicate(self) :
         return \
             type(self)(fc.FcPatternDuplicate(self._fcobj))
@@ -953,6 +1273,13 @@ class Pattern :
         return \
             result
     #end name_unparse
+
+    def filter(self, props) :
+        os = ObjectSet.to_fc(props)
+        result = fc.FcPatternFilter(self._fcobj, os._fcobj)
+        return \
+            type(self)(result)
+    #end filter
 
     # TODO: rest of methods
 
@@ -981,8 +1308,13 @@ class StrSet :
     @classmethod
     def to_fc(celf, pyset) :
         result = fc.FcStrSetCreate()
+        if result == None :
+            raise FontconfigError("FcStrSetCreate failure")
+        #end if
         for s in pyset :
-            fc.FcStrSetAdd(result, s)
+            if fc.FcStrSetAdd(result, s) == 0 :
+                raise FontconfigError("FcStrSetAdd failure")
+            #end if
         #end for
         return \
             celf(result)
@@ -996,7 +1328,7 @@ class StrSet :
 #end StrSet
 
 class StrList :
-    "wrapper around FcCharSet objects. For internal use only: all relevant" \
+    "wrapper around FcStrList objects. For internal use only: all relevant" \
     " functions will pass and return sequences of Python strings."
 
     __slots__ = \
