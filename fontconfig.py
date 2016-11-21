@@ -910,4 +910,4 @@ class StrList :
 
 #end StrList
 
-# TODO: Pattern, LangSet
+# TODO: LangSet
