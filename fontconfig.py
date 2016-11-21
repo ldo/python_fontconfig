@@ -939,14 +939,14 @@ class Config :
         nr_sets = len(sets)
         f_sets = tuple(FontSet.to_fc(s) for s in sets)
         c_sets = (ct.c_void_p * nr_sets)(s._fcobj for s in f_sets)
-        fs = ObjectSet.to_fc(props)
+        os = ObjectSet.to_fc(props)
         result = fc.FcFontSetList \
           (
             self._fcobj,
             ct.cast(c_sets, ct.c_void_p),
             nr_sets,
             pat._fcobj,
-            ct.fs._fcobj
+            os._fcobj
           )
         return \
             FontSet(result, True).from_fc()
@@ -959,8 +959,8 @@ class Config :
         if not isinstance(pat, Pattern) :
             raise TypeError("pat must be a pattern")
         #end if
-        fs = ObjectSet.to_fc(props)
-        result = fc.FcFontList(self._fcobj, pat._fcobj, fs._fcobj)
+        os = ObjectSet.to_fc(props)
+        result = fc.FcFontList(self._fcobj, pat._fcobj, os._fcobj)
         return \
             FontSet(result, True).from_fc()
     #end font_list
