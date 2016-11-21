@@ -314,6 +314,11 @@ fc.FcCharSetFirstPage.argtypes = (ct.c_void_p, ct.POINTER(FC.charset_page), ct.P
 fc.FcCharSetNextPage.restype = FC.Char32
 fc.FcCharSetNextPage.argtypes = (ct.c_void_p, ct.POINTER(FC.charset_page), ct.POINTER(FC.Char32))
 
+fc.FcGetDefaultLangs.restype = ct.c_void_p
+fc.FcGetDefaultLangs.argtypes = ()
+fc.FcDefaultSubstitute.restype = None
+fc.FcDefaultSubstitute.argtypes = (ct.c_void_p,)
+
 # TODO: print, file/dir
 
 fc.FcFontSetCreate.restype = ct.c_void_p
@@ -718,6 +723,11 @@ def copy_filename(s) :
         result.decode() # automatically stops at NUL?
 #end copy_filename
 
+def get_default_langs() :
+    return \
+        StrSet(fc.FcGetDefaultLangs()).from_fc()
+#end get_default_langs
+
 class FontSet :
 
     __slots__ = \
@@ -826,6 +836,10 @@ class Pattern :
         return \
             celf(fc.FcBlanksCreate(), True)
     #end create
+
+    def default_substitute(self) :
+        fc.FcDefaultSubstitute(self._fcobj)
+    #end default_substitute
 
     # TODO: rest of methods
 
