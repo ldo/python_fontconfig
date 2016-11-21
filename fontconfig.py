@@ -235,7 +235,15 @@ class FC :
     #end FontSet
     FontSetPtr = ct.POINTER(FontSet)
 
-    # TODO: FcObjectSet
+    class ObjectSet(ct.Structure) :
+        _fields_ = \
+            [
+                ("nobject", ct.c_int), # number of used elements in array
+                ("sobject", ct.c_int), # number of allocated elements in array
+                ("objects", ct.c_void_p), # array of pattern pointers
+            ]
+    #end ObjectSet
+    ObjectSetPtr = ct.POINTER(ObjectSet)
 
     # enum FcMatchKind
     FcMatchPattern = 0
@@ -363,7 +371,16 @@ fc.FcInitReinitialize.argtypes = ()
 fc.FcInitBringUptoDate.restype = FC.Bool
 fc.FcInitBringUptoDate.argtypes = ()
 
-# TODO: lang, objectset/list, atomic, match, matrix, name
+# TODO: lang
+
+fc.FcObjectSetCreate.restype = ct.c_void_p
+fc.FcObjectSetCreate.argtypes = ()
+fc.FcObjectSetAdd.restype = FC.Bool
+fc.FcObjectSetAdd.argtypes = (ct.c_void_p, ct.c_char_p)
+fc.FcObjectSetDestroy.restype = None
+fc.FcObjectSetDestroy.argtypes = (ct.c_void_p,)
+
+# TODO: atomic, match, matrix, name
 
 # TODO: more pattern/value
 fc.FcNameParse.restype = ct.c_void_p
@@ -438,6 +455,51 @@ def get_version() :
     return \
         fc.FcGetVersion()
 #end get_version
+
+class ObjectSet :
+    "wrapper around FcObjectSet objects. For internal use only: all relevant" \
+    " functions will pass and return Python sequences."
+
+    __slots__ = \
+        ( # to forestall typos
+            "_fcobj",
+        )
+
+    def __init__(self, _fcobj) :
+        self._fcobj = _fcobj
+    #end __init__
+
+    def __del__(self) :
+        if fc != None and self._fcobj != None :
+            fc.FcObjectSetDestroy(self._fcobj)
+            self._fcobj = None
+        #end if
+    #end __del__
+
+    @classmethod
+    def to_fc(celf, pyset) :
+        result = fc.FcObjectSetCreate()
+        for s in pyset :
+            fc.FcObjectSetAdd(result, s.encode())
+        #end for
+        return \
+            celf(result)
+    #end to_fc
+
+    def each(self) :
+        f = ct.cast(self._fcobj, ct.POINTER(FC.ObjectSet))
+        strs = ct.cast(f[0].objects, ct.POINTER(ct.c_void_p))
+        for i in range(f[0].nobject) :
+            yield ct.cast(strs[i], ct.c_char_p).value.decode()
+        #end for
+    #end each
+
+    def from_fc(self) :
+        return \
+            tuple(self.each())
+    #end from_fc
+
+#end ObjectSet
 
 class Blanks :
     "wrapper for FcBlanks objects. Do not instantiate directly: use the create method.\n" \
@@ -690,7 +752,7 @@ class Config :
 
 class CharSet :
     "wrapper around FcCharSet objects. For internal use only: all relevant" \
-    " functions will pass and return Python sets."
+    " functions will pass and return Python sequences."
 
     __slots__ = \
         ( # to forestall typos
@@ -759,6 +821,8 @@ def get_default_langs() :
 #end get_default_langs
 
 class FontSet :
+    "wrapper around FcFontSet objects. For internal use only: all relevant" \
+    " functions will pass and return Python sequences."
 
     __slots__ = \
         ( # to forestall typos
