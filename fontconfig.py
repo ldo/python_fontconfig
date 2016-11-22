@@ -461,7 +461,9 @@ fc.FcPatternDel.argtypes = (ct.c_void_p, ct.c_char_p)
 fc.FcPatternRemove.restype = FC.Bool
 fc.FcPatternRemove.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int)
 # not bothering with separately-typed Add/Get methods
-# TODO: more pattern/value
+# not bothering with Build methods
+fc.FcPatternFormat.restype = ct.c_void_p
+fc.FcPatternFormat.argtypes = (ct.c_void_p, ct.c_char_p)
 
 fc.FcStrCopy.restype = ct.c_char_p
 fc.FcStrCopy.argtypes = (ct.c_void_p,)
@@ -1258,9 +1260,13 @@ class Pattern :
     #end __del__
 
     @classmethod
-    def create(celf) :
+    def create(celf, vals = None) :
+        self = celf(fc.FcPatternCreate())
+        if vals != None :
+            self.build(vals)
+        #end if
         return \
-            celf(fc.FcPatternCreate())
+            self
     #end create
 
     @classmethod
@@ -1345,6 +1351,12 @@ class Pattern :
         #end if
     #end add
 
+    def build(self, vals) :
+        for name, val in vals :
+            self.add(name, val, append = True, weak = False)
+        #end for
+    #end build
+
     def get(self, name, id) :
         value = Value()
         status = fc.FcPatternGet(self._fcobj, name.encode(), id, ct.byref(value))
@@ -1367,7 +1379,13 @@ class Pattern :
             fc.FcPatternRemove(self._fcobj, name.encode(), id) != 0
     #end remove
 
-    # TODO: rest of methods
+    def format(self, fmt) :
+        s = fc.FcPatternFormat(self._fcobj, fmt.encode())
+        result = ct.cast(s, ct.c_char_p).value.decode()
+        fc.FcStrFree(s)
+        return \
+            result
+    #end format
 
 #end Pattern
 
