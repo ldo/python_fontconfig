@@ -21,6 +21,7 @@ A ctypes-based binding for the Fontconfig API, for Python
 # Boston, MA 02110-1301, USA
 #-
 
+import enum
 import ctypes as ct
 from weakref import \
     WeakValueDictionary
@@ -266,6 +267,57 @@ class FC :
 
 #end FC
 
+@enum.unique
+class PROP(enum.Enum) :
+    "all the recognized property names."
+    FAMILY = "family" # String
+    STYLE = "style" # String
+    SLANT = "slant" # Int
+    WEIGHT = "weight" # Int
+    SIZE = "size" # Double
+    ASPECT = "aspect" # Double
+    PIXEL_SIZE = "pixelsize" # Double
+    SPACING = "spacing" # Int
+    FOUNDRY = "foundry" # String
+    ANTIALIAS = "antialias" # Bool (depends)
+    HINTING = "hinting" # Bool (true)
+    HINT_STYLE = "hintstyle" # Int
+    VERTICAL_LAYOUT = "verticallayout" # Bool (false)
+    AUTOHINT = "autohint" # Bool (false)
+    # FC_GLOBAL_ADVANCE is deprecated. this is simply ignored on freetype 2.4.5 or later
+    GLOBAL_ADVANCE = "globaladvance" # Bool (true)
+    WIDTH = "width" # Int
+    FILE = "file" # String
+    INDEX = "index" # Int
+    FT_FACE = "ftface" # FT_Face
+    RASTERIZER = "rasterizer" # String (deprecated)
+    OUTLINE = "outline" # Bool
+    SCALABLE = "scalable" # Bool
+    SCALE = "scale" # double
+    DPI = "dpi" # double
+    RGBA = "rgba" # Int
+    MINSPACE = "minspace" # Bool use minimum line spacing
+    SOURCE = "source" # String (deprecated)
+    CHARSET = "charset" # CharSet
+    LANG = "lang" # String RFC 3066 langs
+    FONTVERSION = "fontversion" # Int from 'head' table
+    FULLNAME = "fullname" # String
+    FAMILYLANG = "familylang" # String RFC 3066 langs
+    STYLELANG = "stylelang" # String RFC 3066 langs
+    FULLNAMELANG = "fullnamelang" # String RFC 3066 langs
+    CAPABILITY = "capability" # String
+    FONTFORMAT = "fontformat" # String
+    EMBOLDEN = "embolden" # Bool - true if emboldening neede
+    EMBEDDED_BITMAP = "embeddedbitmap" # Bool - true to enable embedded bitmaps
+    DECORATIVE = "decorative" # Bool - true if style is a decorative variant
+    LCD_FILTER = "lcdfilter" # Int
+    FONT_FEATURES = "fontfeatures" # String
+    NAMELANG = "namelang" # String RFC 3866 langs
+    PRGNAME = "prgname" # String
+    HASH = "hash" # String
+    POSTSCRIPT_NAME = "postscriptname" # String
+#end PROP
+
 #+
 # Routine arg/result types
 #-
@@ -449,7 +501,8 @@ fc.FcPatternDuplicate.argtypes = (ct.c_void_p,)
 fc.FcPatternReference.restype = ct.c_void_p
 fc.FcPatternReference.argtypes = (ct.c_void_p,)
 fc.FcValueDestroy.restype = None
-fc.FcValueDestroy.argtypes = (FC.Value,)
+#fc.FcValueDestroy.argtypes = (FC.Value,)
+fc.FcValueDestroy.argtypes = (ct.POINTER(FC.Value),)
 fc.FcValueSave.restype = FC.Value
 fc.FcValueSave.argtypes = (FC.Value,)
 fc.FcPatternDestroy.restype = None
@@ -566,15 +619,19 @@ class LangSet :
     __slots__ = \
         ( # to forestall typos
             "_fcobj",
+            "_created",
         )
 
-    def __init__(self, _fcobj) :
+    def __init__(self, _fcobj, _created) :
         self._fcobj = _fcobj
+        self._created = _created
     #end __init__
 
     def __del__(self) :
         if fc != None and self._fcobj != None :
-            fc.FcLangSetDestroy(self._fcobj)
+            if self._created :
+                fc.FcLangSetDestroy(self._fcobj)
+            #end if
             self._fcobj = None
         #end if
     #end __del__
@@ -582,12 +639,12 @@ class LangSet :
     @classmethod
     def create(celf) :
         return \
-            celf(fc.FcLangSetCreate())
+            celf(fc.FcLangSetCreate(), True)
     #end create
 
     def copy(self) :
         return \
-            celf(fc.FcLangSetCopy(self._fcobj))
+            celf(fc.FcLangSetCopy(self._fcobj), True)
     #end copy
 
     def add(self, lang) :
@@ -1272,13 +1329,14 @@ class Value :
             "_fcobj",
         )
 
-    def __init__(self, _fcobj) :
-        self._fcobj = _fcobj
+    def __init__(self) :
+        self._fcobj = FC.Value()
+        self._fcobj.u.f = None
     #end __init__
 
     def __del__(self) :
         if fc != None and self._fcobj != None :
-            fc.FcValueDestroy(self._fcobj)
+            fc.FcValueDestroy(ct.byref(self._fcobj))
             self._fcobj = None
         #end if
     #end __del__
@@ -1287,12 +1345,12 @@ class Value :
         {
             FC.TypeInteger : lambda v : int(v.i),
             FC.TypeDouble : lambda v : float(v.d),
-            FC.TypeString : lambda v : v.s.value.decode(),
+            FC.TypeString : lambda v : v.s.decode(),
             FC.TypeBool : lambda v : v.b != 0,
             FC.TypeMatrix : lambda v : Matrix.from_fc(v.m.contents),
             FC.TypeCharSet : lambda v : CharSet(v.c).from_fc(),
             FC.TypeFTFace : lambda v : v.f, # leave as c_void_p for now
-            FC.TypeLangSet : lambda v : LangSet(v.l).from_fc(),
+            FC.TypeLangSet : lambda v : LangSet(v.l, False).langs,
         }
 
     conv_to_fc = \
@@ -1310,13 +1368,12 @@ class Value :
             LangSet : (FC.TypeLangSet, "l", lambda l : l._fcobj),
         }
 
-    @classmethod
-    def from_fc(celf, v) :
-        if v.type not in celf.conv_from_fc :
-            raise TypeError("cannot convert FC.Value type %d" % v.type)
+    def from_fc(self) :
+        if self._fcobj.type not in self.conv_from_fc :
+            raise TypeError("cannot convert FC.Value type %d" % self._fcobj.type)
         #end if
         return \
-            celf.conv_from_fc[v.type](v.u)
+            self.conv_from_fc[self._fcobj.type](self._fcobj.u)
     #end from_fc
 
     @classmethod
@@ -1333,12 +1390,12 @@ class Value :
                     break
             #end while
         #end if
-        conv = celf.conv_to_fc(conv_type)
-        result = FC.Value()
-        result.type = conv[0]
-        setattr(result.u, conv[1], conv[2](x))
+        result = celf()
+        conv = celf.conv_to_fc[conv_type]
+        result._fcobj.type = conv[0]
+        setattr(result._fcobj.u, conv[1], conv[2](x))
         return \
-            celf(result)
+            result
     #end to_fc
 
 #end Value
@@ -1476,7 +1533,7 @@ class Pattern :
 
     def get(self, name, id) :
         value = Value()
-        status = fc.FcPatternGet(self._fcobj, name.encode(), id, ct.byref(value))
+        status = fc.FcPatternGet(self._fcobj, name.encode(), id, ct.byref(value._fcobj))
         if status == FC.ResultMatch :
             result = value.from_fc()
         else :
@@ -1503,6 +1560,21 @@ class Pattern :
         return \
             result
     #end format
+
+    @property
+    def each_prop(self) :
+        "iterates over each property name, index and corresponding value."
+        for prop in PROP :
+            id = 0
+            while True :
+                status, result = self.get(prop.value, id)
+                if status != FC.ResultMatch :
+                    break
+                yield prop, id, result
+                id += 1
+            #end while
+        #end for
+    #end each_prop
 
 #end Pattern
 
