@@ -192,14 +192,14 @@ class FC :
 
     #end Matrix
 
-    # TODO: FcObjectType, FcConstant
+    # FcObjectType, FcConstant -- deprecated?
 
     # enum FcResult
     ResultMatch = 0
     ResultNoMatch = 1
     ResultTypeMismatch = 2
-    FcResultNoId = 3
-    FcResultOutOfMemory = 4
+    ResultNoId = 3
+    ResultOutOfMemory = 4
 
     class Value(ct.Structure) :
         pass
@@ -426,7 +426,6 @@ fc.FcMatrixCopy.argtypes = (ct.c_void_p,)
 
 # TODO: name
 
-# TODO: more pattern/value
 fc.FcNameParse.restype = ct.c_void_p
 fc.FcNameParse.argtypes = (ct.c_char_p,)
 fc.FcNameUnparse.restype = ct.c_void_p
@@ -445,12 +444,30 @@ fc.FcPatternDestroy.restype = None
 fc.FcPatternDestroy.argtypes = (ct.c_void_p,)
 fc.FcPatternFilter.restype = ct.c_void_p
 fc.FcPatternFilter.argtypes = (ct.c_void_p, ct.c_void_p)
+fc.FcPatternEqual.restype = FC.Bool
+fc.FcPatternEqual.argtypes = (ct.c_void_p, ct.c_void_p)
+fc.FcPatternEqualSubset.restype = FC.Bool
+fc.FcPatternEqualSubset.argtypes = (ct.c_void_p, ct.c_void_p, ct.c_void_p)
+fc.FcPatternHash.restype = ct.c_uint
+fc.FcPatternHash.argtypes = (ct.c_void_p,)
+fc.FcPatternAdd.restype = FC.Bool
+fc.FcPatternAdd.argtypes = (ct.c_void_p, ct.c_char_p, FC.Value, FC.Bool)
+fc.FcPatternAddWeak.restype = FC.Bool
+fc.FcPatternAddWeak.argtypes = (ct.c_void_p, ct.c_char_p, FC.Value, FC.Bool)
+fc.FcPatternGet.restype = ct.c_uint
+fc.FcPatternGet.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, ct.POINTER(FC.Value))
+fc.FcPatternDel.restype = FC.Bool
+fc.FcPatternDel.argtypes = (ct.c_void_p, ct.c_char_p)
+fc.FcPatternRemove.restype = FC.Bool
+fc.FcPatternRemove.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int)
+# not bothering with separately-typed Add/Get methods
+# TODO: more pattern/value
 
-# probably don’t need rest of str/utf stuff
 fc.FcStrCopy.restype = ct.c_char_p
 fc.FcStrCopy.argtypes = (ct.c_void_p,)
 fc.FcStrFree.restype = None
 fc.FcStrFree.argtypes = (ct.c_void_p,)
+# probably don’t need rest of str/utf stuff
 
 # TODO: xml
 
@@ -1170,7 +1187,7 @@ class Value :
               # allocates memory!
             CharSet : (FC.TypeCharSet, "c", lambda s : CharSet.to_fc(s)),
               # allocates memory!
-            # FTFace handled specially
+            # TODO: FTFace handled specially
             LangSet : (FC.TypeLangSet, "l", lambda l : l._fcobj),
         }
 
@@ -1185,10 +1202,19 @@ class Value :
 
     @classmethod
     def to_fc(celf, x) :
-        if type(x) not in celf.conv_to_fc :
-            raise TypeError("cannot convert %s type to FC.Value" % type(x).__name__)
+        conv_type = type(x)
+        if conv_type not in celf.conv_to_fc :
+            conv_types = iter(celf.conv_to_fc.keys())
+            while True :
+                conv_type = next(conv_types, None)
+                if conv_type == None :
+                    raise TypeError("cannot convert %s type to FC.Value" % type(x).__name__)
+                #end if
+                if isinstance(x, conv_type) :
+                    break
+            #end while
         #end if
-        conv = celf.conv_to_fc(type(x))
+        conv = celf.conv_to_fc(conv_type)
         result = FC.Value()
         result.type = conv[0]
         setattr(result.u, conv[1], conv[2](x))
@@ -1283,6 +1309,63 @@ class Pattern :
         return \
             type(self)(result)
     #end filter
+
+    def __eq__(self, other) :
+        if not isinstance(other, Pattern) :
+            raise TypeError("other arg is not a Pattern")
+        #end if
+        return \
+            fc.FcPatternEqual(self._fcobj, other._fcobj) != 0
+    #end __eq__
+
+    def equal_subset(self, other, props) :
+        if not isinstance(other, Pattern) :
+            raise TypeError("other arg is not a Pattern")
+        #end if
+        os = ObjectSet.to_fc(props)
+        return \
+            fc.FcPatternEqualSubset(self._fcobj, other._fcobj, os._fcobj) != 0
+    #end equal_subset
+
+    def hash(self) :
+        return \
+            fc.FcPatternHash(self._fcobj)
+    #end hash
+    # __hash__ = hash # should I do this?
+
+    def add(self, name, value, append, weak) :
+        obj = Value.to_fc(value)
+        if (
+                (fc.FcPatternAdd, fc.FcPatternAddWeak)
+                    (self._fcobj, name.encode(), obj._fcobj, FC.Bool(append))
+            ==
+                0
+        ) :
+            raise FontconfigError("FcPatternAdd%s failure" % ("", "Weak")[weak])
+        #end if
+    #end add
+
+    def get(self, name, id) :
+        value = Value()
+        status = fc.FcPatternGet(self._fcobj, name.encode(), id, ct.byref(value))
+        if status == FC.ResultMatch :
+            result = value.from_fc()
+        else :
+            result = None
+        #end if
+        return \
+            (status, result)
+    #end get
+
+    def remove_all(self, name) :
+        return \
+            fc.FcPatternDel(self._fcobj, name.encode()) != 0
+    #end remove_all
+
+    def remove(self, name, id) :
+        return \
+            fc.FcPatternRemove(self._fcobj, name.encode(), id) != 0
+    #end remove
 
     # TODO: rest of methods
 
