@@ -1095,7 +1095,7 @@ class Config :
         #end if
         nr_sets, f_sets, c_sets = FontSet.to_fc_list(sets)
         if want_coverage :
-            coverage = CharSet(set())
+            coverage = CharSet(set(), True)
         else :
             coverage = None
         #end if
@@ -1123,7 +1123,7 @@ class Config :
             raise TypeError("pat must be a Pattern")
         #end if
         if want_coverage :
-            coverage = CharSet(set())
+            coverage = CharSet(set(), True)
         else :
             coverage = None
         #end if
@@ -1153,15 +1153,19 @@ class CharSet :
     __slots__ = \
         ( # to forestall typos
             "_fcobj",
+            "_created",
         )
 
-    def __init__(self, _fcobj) :
+    def __init__(self, _fcobj, _created) :
         self._fcobj = _fcobj
+        self._created = _created
     #end __init__
 
     def __del__(self) :
         if fc != None and self._fcobj != None :
-            fc.FcCharSetDestroy(self._fcobj)
+            if self._created :
+                fc.FcCharSetDestroy(self._fcobj)
+            #end if
             self._fcobj = None
         #end if
     #end __del__
@@ -1173,7 +1177,7 @@ class CharSet :
             fc.FcCharSetAddChar(result, char)
         #end for
         return \
-            celf(result)
+            celf(result, True)
     #end to_fc
 
     def from_fc(self) :
@@ -1348,7 +1352,7 @@ class Value :
             FC.TypeString : lambda v : v.s.decode(),
             FC.TypeBool : lambda v : v.b != 0,
             FC.TypeMatrix : lambda v : Matrix.from_fc(v.m.contents),
-            FC.TypeCharSet : lambda v : CharSet(v.c).from_fc(),
+            FC.TypeCharSet : lambda v : CharSet(v.c, False).from_fc(),
             FC.TypeFTFace : lambda v : v.f, # leave as c_void_p for now
             FC.TypeLangSet : lambda v : LangSet(v.l, False).langs,
         }
