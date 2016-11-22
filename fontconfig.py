@@ -328,10 +328,10 @@ fc.FcConfigSubstituteWithPat.restype = FC.Bool
 fc.FcConfigSubstituteWithPat.argtypes = (ct.c_void_p, ct.c_void_p, ct.c_void_p, ct.c_uint)
 fc.FcConfigSubstitute.restype = FC.Bool
 fc.FcConfigSubstitute.argtypes = (ct.c_void_p, ct.c_void_p, ct.c_uint)
-fc.FcConfigGetSysRoot.restype = ct.c_char_p
-fc.FcConfigGetSysRoot.restype.argtypes = (ct.c_void_p,)
+fc.FcConfigGetSysRoot.restype = ct.c_void_p
+fc.FcConfigGetSysRoot.argtypes = (ct.c_void_p,)
 fc.FcConfigSetSysRoot.restype = None
-fc.FcConfigSetSysRoot.argtypes = (ct.c_void_p, ct.c_char_p)
+fc.FcConfigSetSysRoot.argtypes = (ct.c_void_p, ct.c_void_p)
 
 fc.FcCharSetCreate.restype = ct.c_void_p
 fc.FcCharSetCreate.argtypes = ()
@@ -937,8 +937,8 @@ class Config :
     @property
     def sysroot(self) :
         result = fc.FcConfigGetSysRoot(self._fcobj)
-        if bool(result) :
-            result = result.decode()
+        if result != None :
+            result = ct.cast(result, ct.c_char_p).value.decode()
         else :
             result = None
         #end if
@@ -948,6 +948,7 @@ class Config :
 
     @sysroot.setter
     def sysroot(self, newroot) :
+        # note: trying to pass NULL second arg to FcConfigSetSysRoot will segfault!
         fc.FcConfigSetSysRoot(self._fcobj, newroot.encode())
     #end sysroot
 
