@@ -247,15 +247,15 @@ class FC :
     ObjectSetPtr = ct.POINTER(ObjectSet)
 
     # enum FcMatchKind
-    FcMatchPattern = 0
-    FcMatchFont = 1
-    FcMatchScan = 2
+    MatchPattern = 0
+    MatchFont = 1
+    MatchScan = 2
 
     # enum FcLangResult
-    FcLangEqual = 0
-    FcLangDifferentCountry = 1
-    FcLangDifferentTerritory = 1
-    FcLangDifferentLang = 2
+    LangEqual = 0
+    LangDifferentCountry = 1
+    LangDifferentTerritory = 1
+    LangDifferentLang = 2
 
     # enum FcSetName
     SetSystem = 0
