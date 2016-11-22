@@ -752,6 +752,9 @@ class ObjectSet :
     def to_fc(celf, pyset) :
         result = fc.FcObjectSetCreate()
         for s in pyset :
+            if isinstance(s, PROP) :
+                s = s.value
+            #end if
             fc.FcObjectSetAdd(result, s.encode())
         #end for
         return \
@@ -1536,6 +1539,9 @@ class Pattern :
     #end build
 
     def get(self, name, id) :
+        if isinstance(name, PROP) :
+            name = name.value
+        #end if
         value = Value()
         status = fc.FcPatternGet(self._fcobj, name.encode(), id, ct.byref(value._fcobj))
         if status == FC.ResultMatch :
