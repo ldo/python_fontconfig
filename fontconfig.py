@@ -775,7 +775,7 @@ class Blanks :
 
 class Config :
     "high-level wrapper around FcConfig objects. Do not instantiate directly;" \
-    " use the create method."
+    " use the create or get_current methods."
 
     __slots__ = \
         ( # to forestall typos
