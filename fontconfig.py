@@ -418,7 +418,19 @@ fc.FcFontSetList.argtypes = (ct.c_void_p, ct.c_void_p, ct.c_int, ct.c_void_p, ct
 fc.FcFontList.restype = ct.c_void_p
 fc.FcFontList.argtypes = (ct.c_void_p, ct.c_void_p, ct.c_void_p)
 
-# TODO: atomic, match
+# TODO: atomic
+
+fc.FcFontSetMatch.restype = ct.c_void_p
+fc.FcFontSetMatch.argtypes = (ct.c_void_p, ct.c_void_p, ct.c_int, ct.c_void_p, ct.c_void_p)
+fc.FcFontMatch.restype = ct.c_void_p
+fc.FcFontMatch.argtypes = (ct.c_void_p, ct.c_void_p, ct.c_void_p)
+fc.FcFontRenderPrepare.restype = ct.c_void_p
+fc.FcFontRenderPrepare.argtypes = (ct.c_void_p, ct.c_void_p, ct.c_void_p)
+fc.FcFontSetSort.restype = ct.c_void_p
+fc.FcFontSetSort = (ct.c_void_p, ct.c_void_p, ct.c_int, ct.c_void_p, FC.Bool, ct.c_void_p, ct.c_void_p)
+fc.FcFontSort.restype = ct.c_void_p
+fc.FcFontSort = (ct.c_void_p, ct.c_void_p, FC.Bool, ct.c_void_p, ct.c_void_p)
+# FcFontSetSortDestroy deprecated, use FcFontSetDestroy instead
 
 # probably don’t need rest of matrix stuff
 fc.FcMatrixCopy.restype = ct.c_void_p
@@ -954,11 +966,9 @@ class Config :
 
     def font_set_list(self, sets, pat, props) :
         if not isinstance(pat, Pattern) :
-            raise TypeError("pat must be a pattern")
+            raise TypeError("pat must be a Pattern")
         #end if
-        nr_sets = len(sets)
-        f_sets = tuple(FontSet.to_fc(s) for s in sets)
-        c_sets = (ct.c_void_p * nr_sets)(s._fcobj for s in f_sets)
+        nr_sets, f_sets, c_sets = FontSet.to_fc_list(sets)
         os = ObjectSet.to_fc(props)
         result = fc.FcFontSetList \
           (
@@ -977,13 +987,105 @@ class Config :
         " Patterns describing them, containing only the properties named" \
         " in props."
         if not isinstance(pat, Pattern) :
-            raise TypeError("pat must be a pattern")
+            raise TypeError("pat must be a Pattern")
         #end if
         os = ObjectSet.to_fc(props)
         result = fc.FcFontList(self._fcobj, pat._fcobj, os._fcobj)
         return \
             FontSet(result, True).from_fc()
     #end font_list
+
+    def font_set_match(self, sets, pat) :
+        if not isinstance(pat, Pattern) :
+            raise TypeError("pat must be a Pattern")
+        #end if
+        nr_sets, f_sets, c_sets = FontSet.to_fc_list(sets)
+        result_status = ct.c_uint()
+        result_pat = fc.FcFontSetMatch \
+          (
+            self._fcobj,
+            ct.cast(c_sets, ct.c_void_p),
+            nr_sets,
+            pat._fcobj,
+            ct.byref(result_status)
+          )
+        return \
+            (Pattern(result_pat), result_status.value)
+    #end font_set_match
+
+    def font_match(self, pat) :
+        if not isinstance(pat, Pattern) :
+            raise TypeError("pat must be a Pattern")
+        #end if
+        result_status = ct.c_uint()
+        result_pat = fc.FcFontMatch(self._fcobj, pat._fcobj, ct.byref(result_status))
+        return \
+            (Pattern(result_pat), result_status.value)
+    #end font_match
+
+    def font_render_prepare(self, pat, font) :
+        if not isinstance(pat, Pattern) or not isinstance(font, Pattern) :
+            raise TypeError("pat and font must be Patterns")
+        #end if
+        result = fc.FcFontRenderPrepare(self._fcobj, pat._fcobj, font._fcobj)
+        return \
+            Pattern(result)
+    #end font_render_prepare
+
+    def font_set_sort(self, sets, pat, trim, want_coverage) :
+        if not isinstance(pat, Pattern) :
+            raise TypeError("pat must be a Pattern")
+        #end if
+        nr_sets, f_sets, c_sets = FontSet.to_fc_list(sets)
+        if want_coverage :
+            coverage = CharSet(set())
+        else :
+            coverage = None
+        #end if
+        result_status = ct.c_uint()
+        result_set = fc.FcFontSetSort \
+          (
+            self._fcobj,
+            ct.cast(c_sets, ct.c_void_p),
+            nr_sets,
+            pat._fcobj,
+            FC.Bool(trim),
+            (lambda : None, lambda : coverage._fcobj)[want_coverage](),
+            ct.byref(result_status)
+          )
+        return \
+            (
+                FontSet(result_set, True).from_fc(),
+                (lambda : None, lambda : coverage.from_fc())[want_coverage](),
+                result_status.value
+            )
+    #end font_set_sort
+
+    def font_sort(self, pat, trim, want_coverage) :
+        if not isinstance(pat, Pattern) :
+            raise TypeError("pat must be a Pattern")
+        #end if
+        if want_coverage :
+            coverage = CharSet(set())
+        else :
+            coverage = None
+        #end if
+        result_status = ct.c_uint()
+        result_set = fc.FcFontSort \
+          (
+            self._fcobj,
+            pat._fcobj,
+            FC.Bool(trim),
+            (lambda : None, lambda : coverage._fcobj)[want_coverage](),
+            ct.byref(result_status)
+          )
+        return \
+            (
+                FontSet(result_set, True).from_fc(),
+                (lambda : None, lambda : coverage.from_fc())[want_coverage](),
+                result_status.value
+            )
+    #end font_sort
 
 #end Config
 
@@ -1113,6 +1215,20 @@ class FontSet :
         return \
             result
     #end to_fc
+
+    @classmethod
+    def to_fc_list(celf, sets) :
+        nr_sets = len(sets)
+        f_sets = tuple(FontSet.to_fc(s) for s in sets)
+          # caller will need to keep these around to ensure the FcFontSet
+          # objects don’t disappear
+        c_sets = (ct.c_void_p * nr_sets)()
+        for i in range(nr_sets) :
+            c_sets[i] = f_sets[i]._fcobj
+        #end for
+        return \
+            (nr_sets, f_sets, c_sets)
+    #end to_fc_list
 
     def each(self) :
         f = ct.cast(self._fcobj, ct.POINTER(FC.FontSet))
