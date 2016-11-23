@@ -481,7 +481,7 @@ fc.FcFontRenderPrepare.argtypes = (ct.c_void_p, ct.c_void_p, ct.c_void_p)
 fc.FcFontSetSort.restype = ct.c_void_p
 fc.FcFontSetSort = (ct.c_void_p, ct.c_void_p, ct.c_int, ct.c_void_p, FC.Bool, ct.c_void_p, ct.c_void_p)
 fc.FcFontSort.restype = ct.c_void_p
-fc.FcFontSort = (ct.c_void_p, ct.c_void_p, FC.Bool, ct.c_void_p, ct.c_void_p)
+fc.FcFontSort.argtypes = (ct.c_void_p, ct.c_void_p, FC.Bool, ct.c_void_p, ct.c_void_p)
 # FcFontSetSortDestroy deprecated, use FcFontSetDestroy instead
 
 # probably don’t need rest of matrix stuff
