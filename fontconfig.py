@@ -87,7 +87,7 @@ class FC :
     FULLNAMELANG = "fullnamelang" # String RFC 3066 langs
     CAPABILITY = "capability" # String
     FONTFORMAT = "fontformat" # String
-    EMBOLDEN = "embolden" # Bool - true if emboldening neede
+    EMBOLDEN = "embolden" # Bool - true if emboldening needed
     EMBEDDED_BITMAP = "embeddedbitmap" # Bool - true to enable embedded bitmaps
     DECORATIVE = "decorative" # Bool - true if style is a decorative variant
     LCD_FILTER = "lcdfilter" # Int
@@ -307,7 +307,7 @@ class PROP(enum.Enum) :
     FULLNAMELANG = "fullnamelang" # String RFC 3066 langs
     CAPABILITY = "capability" # String
     FONTFORMAT = "fontformat" # String
-    EMBOLDEN = "embolden" # Bool - true if emboldening neede
+    EMBOLDEN = "embolden" # Bool - true if emboldening needed
     EMBEDDED_BITMAP = "embeddedbitmap" # Bool - true to enable embedded bitmaps
     DECORATIVE = "decorative" # Bool - true if style is a decorative variant
     LCD_FILTER = "lcdfilter" # Int
