@@ -685,11 +685,16 @@ class LangSet :
     __ge__ = issuperset # allow ”>=” just like regular Python sets
 
     def __eq__(self, other) :
-        if not isinstance(other, LangSet) :
-            raise TypeError("other must also be a LangSet")
+        if other != None :
+            if not isinstance(other, LangSet) :
+                raise TypeError("other must also be a LangSet")
+            #end if
+            result = fc.FcLangSetEqual(self._fcobj, other._fcobj) != 0
+        else :
+            result = False
         #end if
         return \
-            fc.FcLangSetEqual(self._fcobj, other._fcobj) != 0
+            result
     #end __eq__
 
     def hash(self) :
@@ -1504,11 +1509,16 @@ class Pattern :
     #end filter
 
     def __eq__(self, other) :
-        if not isinstance(other, Pattern) :
-            raise TypeError("other arg is not a Pattern")
+        if other != None :
+            if not isinstance(other, Pattern) :
+                raise TypeError("other arg is not a Pattern")
+            #end if
+            result = fc.FcPatternEqual(self._fcobj, other._fcobj) != 0
+        else :
+            result = False
         #end if
         return \
-            fc.FcPatternEqual(self._fcobj, other._fcobj) != 0
+            result
     #end __eq__
 
     def equal_subset(self, other, props) :
