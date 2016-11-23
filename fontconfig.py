@@ -1313,6 +1313,13 @@ class Matrix :
 
     __slots__ = ("xx", "xy", "yx", "yy") # to forestall typos
 
+    def __init__(self, *, xx, xy, yx, yy) :
+        self.xx = xx
+        self.xy = xy
+        self.yx = yx
+        self.yy = yy
+    #end __init__
+
     @classmethod
     def from_fc(celf, m) :
         return \
