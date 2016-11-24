@@ -202,6 +202,9 @@ class FC :
     ResultNoId = 3
     ResultOutOfMemory = 4
 
+    # NOTE: I cannot seem to make Fontconfig calls that take Value
+    # objects without stack-smashing crashes. Seems there is something
+    # not right in how ctypes passes these structures by value.
     class Value(ct.Structure) :
         pass
     #end Value
@@ -500,10 +503,11 @@ fc.FcPatternDuplicate.restype = ct.c_void_p
 fc.FcPatternDuplicate.argtypes = (ct.c_void_p,)
 fc.FcPatternReference.restype = ct.c_void_p
 fc.FcPatternReference.argtypes = (ct.c_void_p,)
-fc.FcValueDestroy.restype = None
-fc.FcValueDestroy.argtypes = (FC.Value,)
-fc.FcValueSave.restype = FC.Value
-fc.FcValueSave.argtypes = (FC.Value,)
+# cannot correctly use calls that take FC.Value args (see note on class definition above for why)
+#fc.FcValueDestroy.restype = None
+#fc.FcValueDestroy.argtypes = (FC.Value,)
+#fc.FcValueSave.restype = FC.Value
+#fc.FcValueSave.argtypes = (FC.Value,)
 fc.FcPatternDestroy.restype = None
 fc.FcPatternDestroy.argtypes = (ct.c_void_p,)
 fc.FcPatternFilter.restype = ct.c_void_p
@@ -514,17 +518,45 @@ fc.FcPatternEqualSubset.restype = FC.Bool
 fc.FcPatternEqualSubset.argtypes = (ct.c_void_p, ct.c_void_p, ct.c_void_p)
 fc.FcPatternHash.restype = ct.c_uint
 fc.FcPatternHash.argtypes = (ct.c_void_p,)
-fc.FcPatternAdd.restype = FC.Bool
-fc.FcPatternAdd.argtypes = (ct.c_void_p, ct.c_char_p, FC.Value, FC.Bool)
-fc.FcPatternAddWeak.restype = FC.Bool
-fc.FcPatternAddWeak.argtypes = (ct.c_void_p, ct.c_char_p, FC.Value, FC.Bool)
-fc.FcPatternGet.restype = ct.c_uint
-fc.FcPatternGet.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, FC.Value)
+#fc.FcPatternAdd.restype = FC.Bool
+#fc.FcPatternAdd.argtypes = (ct.c_void_p, ct.c_char_p, FC.Value, FC.Bool)
+#fc.FcPatternAddWeak.restype = FC.Bool
+#fc.FcPatternAddWeak.argtypes = (ct.c_void_p, ct.c_char_p, FC.Value, FC.Bool)
+#fc.FcPatternGet.restype = ct.c_uint
+#fc.FcPatternGet.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, FC.Value)
 fc.FcPatternDel.restype = FC.Bool
 fc.FcPatternDel.argtypes = (ct.c_void_p, ct.c_char_p)
 fc.FcPatternRemove.restype = FC.Bool
 fc.FcPatternRemove.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int)
-# not bothering with separately-typed Add/Get methods
+# have to use separately-typed Add/Get methods because of problems with FC.Value structs
+fc.FcPatternAddInteger.restype = FC.Bool
+fc.FcPatternAddInteger.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int)
+fc.FcPatternAddDouble.restype = FC.Bool
+fc.FcPatternAddDouble.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_double)
+fc.FcPatternAddString.restype = FC.Bool
+fc.FcPatternAddString.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_char_p)
+fc.FcPatternAddMatrix.restype = FC.Bool
+fc.FcPatternAddMatrix.argtypes = (ct.c_void_p, ct.c_char_p, ct.POINTER(FC.Matrix))
+fc.FcPatternAddCharSet.restype = FC.Bool
+fc.FcPatternAddCharSet.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_void_p)
+fc.FcPatternAddBool.restype = FC.Bool
+fc.FcPatternAddBool.argtypes = (ct.c_void_p, ct.c_char_p, FC.Bool)
+fc.FcPatternAddLangSet.restype = FC.Bool
+fc.FcPatternAddLangSet.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_void_p)
+fc.FcPatternGetInteger.restype = ct.c_uint
+fc.FcPatternGetInteger.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, ct.POINTER(ct.c_int))
+fc.FcPatternGetDouble.restype = ct.c_uint
+fc.FcPatternGetDouble.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, ct.POINTER(ct.c_double))
+fc.FcPatternGetString.restype = ct.c_uint
+fc.FcPatternGetString.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, ct.POINTER(ct.c_void_p))
+fc.FcPatternGetMatrix.restype = ct.c_uint
+fc.FcPatternGetMatrix.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, ct.POINTER(FC.Matrix))
+fc.FcPatternGetCharSet.restype = ct.c_uint
+fc.FcPatternGetCharSet.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, ct.POINTER(ct.c_void_p))
+fc.FcPatternGetBool.restype = ct.c_uint
+fc.FcPatternGetBool.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, ct.POINTER(FC.Bool))
+fc.FcPatternGetLangSet.restype = ct.c_uint
+fc.FcPatternGetLangSet.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, ct.POINTER(ct.c_void_p))
 # not bothering with Build methods
 fc.FcPatternFormat.restype = ct.c_void_p
 fc.FcPatternFormat.argtypes = (ct.c_void_p, ct.c_char_p)
@@ -1341,6 +1373,8 @@ class Matrix :
 class Value :
     "wrapper around FcValue objects. For internal use only: all relevant" \
     " functions will pass and return regular Python objects."
+    # NOTE: Cannot make use of this until I figure out how to pass
+    # FC.Value values to Fontconfig calls without stack-smashing crashes.
 
     __slots__ = \
         ( # to forestall typos
@@ -1434,6 +1468,22 @@ class Value :
             result._refs.append(saveref)
         #end if
         setattr(result._fcobj.u, conv[1], val)
+        if True : # debug
+            buf = bytearray(ct.sizeof(result._fcobj))
+            ct.memmove \
+              (
+                ct.addressof((ct.c_char * len(buf)).from_buffer(buf)),
+                ct.addressof(result._fcobj),
+                len(buf)
+              )
+            import sys
+            sys.stderr.write("conversion of %s:" % repr(x))
+            for b in buf :
+                sys.stderr.write("%02x" % b)
+            #end for
+            sys.stderr.write("\n")
+            sys.stderr.flush()
+        #end if # debug
         return \
             result
     #end to_fc
@@ -1558,35 +1608,102 @@ class Pattern :
     #end hash
     # __hash__ = hash # should I do this?
 
-    def add(self, name, value, append, weak) :
+    def add(self, name, value) :
+
+        convs = \
+            {
+                int : (fc.FcPatternAddInteger, None, None, False),
+                float : (fc.FcPatternAddDouble, None, None, False),
+                str : (fc.FcPatternAddString, lambda s : s.encode(), None, False),
+                Matrix : (fc.FcPatternAddMatrix, lambda m : m.to_fc(), lambda m : m._fcobj, True),
+                set : (fc.FcPatternAddCharSet, lambda c : CharSet.to_fc(c), lambda c : c._fcobj, False),
+                bool : (fc.FcPatternAddBool, lambda b : FC.Bool(b), None, False),
+                # TODO: FTFace
+                LangSet : (fc.FcPatternAddLangSet, None, lambda l : l._fcobj, False),
+            }
+
+    #begin add
         if isinstance(name, PROP) :
             name = name.value
         #end if
-        obj = Value.to_fc(value)
-        if (
-                (fc.FcPatternAdd, fc.FcPatternAddWeak)[weak]
-                    (self._fcobj, name.encode(), ct.byref(obj._fcobj), FC.Bool(append))
-            ==
-                0
-        ) :
-            raise FontconfigError("FcPatternAdd%s failure" % ("", "Weak")[weak])
+        conv_type = type(value)
+        if conv_type not in convs :
+            conv_types = iter(convs.keys())
+            while True :
+                conv_type = next(conv_types, None)
+                if conv_type == None :
+                    raise TypeError \
+                      (
+                        "cannot convert %s type to Fontconfig equivalent" % type(value).__name__
+                      )
+                #end if
+                if isinstance(value, conv_type) :
+                    break
+            #end while
+        #end if
+        func, wrap, extr, byref = convs[conv_type]
+        if wrap != None :
+            wrapper = wrap(value)
+              # keep reference to this Python object so ctypes object does not
+              # disappear prematurely
+            value1 = wrapper
+        else :
+            value1 = value
+        #end if
+        if extr != None :
+            c_value = extr(value1)
+        else :
+            c_value = value1
+        #end if
+        if byref :
+            c_arg = ct.byref(c_value)
+        else :
+            c_arg = c_value
+        #end if
+        if func(self._fcobj, name.encode(), c_arg) == 0 :
+            raise FontconfigError("FcPatternAdd failure")
         #end if
     #end add
 
     def build(self, vals) :
         for name, val in vals :
-            self.add(name, val, append = True, weak = False)
+            self.add(name, val)
         #end for
     #end build
 
-    def get(self, name, id) :
+    def get(self, name, id, fctype) :
+
+        convs = \
+            {
+                FC.TypeInteger : (fc.FcPatternGetInteger, ct.c_int, None),
+                FC.TypeDouble : (fc.FcPatternGetDouble, ct.c_double, None),
+                FC.TypeString : (fc.FcPatternGetString, ct.c_void_p, lambda p : cast(p, ct.c_char_p).decode()),
+                FC.TypeMatrix : (fc.fc.FcPatternGetMatrix, FC.Matrix, lambda v : Matrix.from_fc(v.m.contents)),
+                FC.TypeCharSet : (fc.FcPatternGetCharSet, ct.c_void_p, lambda c : CharSet(c, False).from_fc()),
+                FC.TypeBool : (fc.FcPatternGetBool, FC.Bool, lambda b : b != 0),
+                # no fc.FcPatternGetFtFace?
+                FC.TypeLangSet : (fc.FcPatternGetLangSet, ct.c_void_p, lambda l : LangSet(l, False).langs),
+            }
+
+    #begin get
+        if fctype not in convs :
+            raise ValueError("type code not one of the valid FC.Typexxx values")
+        #end if
         if isinstance(name, PROP) :
             name = name.value
         #end if
-        value = Value()
-        status = fc.FcPatternGet(self._fcobj, name.encode(), id, ct.byref(value._fcobj))
+        func, c_type, extr = convs[fctype]
+        c_arg = c_type()
+        status = func(self._fcobj, name.encode(), id, ct.byref(c_arg))
+        if status == FC.ResultTypeMismatch :
+            raise TypeError("value is not of expected type")
+        #end if
         if status == FC.ResultMatch :
-            result = value.from_fc()
+            if extr != None :
+                result = extr(c_arg)
+            else :
+                result = c_arg.value
+            #end if
         else :
             result = None
         #end if
