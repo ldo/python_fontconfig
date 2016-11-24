@@ -1345,16 +1345,19 @@ class Value :
     __slots__ = \
         ( # to forestall typos
             "_fcobj",
+            "_refs",
+              # for saving refs to objects that must not disappear as long as this Value exists
         )
 
     def __init__(self) :
         self._fcobj = FC.Value()
         self._fcobj.u.f = None
+        self._refs = []
     #end __init__
 
     def __del__(self) :
         if fc != None and self._fcobj != None :
-            fc.FcValueDestroy(ct.byref(self._fcobj))
+            fc.FcValueDestroy(self._fcobj)
             self._fcobj = None
         #end if
     #end __del__
@@ -1371,20 +1374,35 @@ class Value :
             FC.TypeLangSet : lambda v : LangSet(v.l, False).langs,
         }
 
+    def conv_matrix(m) :
+        mat = m.to_fc()
+        return \
+            (ct.pointer(mat), mat)
+    #end conv_matrix
+
+    def conv_charset(s) :
+        res = CharSet.to_fc(s)
+        return \
+            (res._fcobj, res)
+    #end conv_charset
+
+    def conv_langset(l) :
+        return \
+            (l._fcobj, l)
+    #end conv_langset
+
     conv_to_fc = \
         {
-            int : (FC.TypeInteger, "i", lambda x : x),
-            float : (FC.TypeDouble, "d", lambda x : x),
-            str : (FC.TypeString, "s", lambda s : fc.FcStrCopy(s.encode())),
-              # allocates memory!
-            bool : (FC.TypeBool, "b", int),
-            Matrix : (FC.TypeMatrix, "m", lambda m : fc.FcMatrixCopy(ct.byref(m.to_fc()))),
-              # allocates memory!
-            CharSet : (FC.TypeCharSet, "c", lambda s : CharSet.to_fc(s)),
-              # allocates memory!
-            # TODO: FTFace handled specially
-            LangSet : (FC.TypeLangSet, "l", lambda l : l._fcobj),
+            int : (FC.TypeInteger, "i", lambda x : (x, None)),
+            float : (FC.TypeDouble, "d", lambda x : (x, None)),
+            str : (FC.TypeString, "s", lambda s : (fc.FcStrCopy(s.encode()), None)),
+            bool : (FC.TypeBool, "b", lambda x : (int(x), None)),
+            Matrix : (FC.TypeMatrix, "m", conv_matrix),
+            set : (FC.TypeCharSet, "c", conv_charset),
+            # TODO: FTFace
+            LangSet : (FC.TypeLangSet, "l", conv_langset),
         }
+    del conv_matrix, conv_charset, conv_langset # don’t need these names any more
 
     def from_fc(self) :
         if self._fcobj.type not in self.conv_from_fc :
@@ -1411,7 +1429,11 @@ class Value :
         result = celf()
         conv = celf.conv_to_fc[conv_type]
         result._fcobj.type = conv[0]
-        setattr(result._fcobj.u, conv[1], conv[2](x))
+        val, saveref = conv[2](x)
+        if saveref != None :
+            result._refs.append(saveref)
+        #end if
+        setattr(result._fcobj.u, conv[1], val)
         return \
             result
     #end to_fc
@@ -1537,10 +1559,13 @@ class Pattern :
     # __hash__ = hash # should I do this?
 
     def add(self, name, value, append, weak) :
+        if isinstance(name, PROP) :
+            name = name.value
+        #end if
         obj = Value.to_fc(value)
         if (
-                (fc.FcPatternAdd, fc.FcPatternAddWeak)
-                    (self._fcobj, name.encode(), obj._fcobj, FC.Bool(append))
+                (fc.FcPatternAdd, fc.FcPatternAddWeak)[weak]
+                    (self._fcobj, name.encode(), ct.byref(obj._fcobj), FC.Bool(append))
             ==
                 0
         ) :
