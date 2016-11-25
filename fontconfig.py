@@ -427,6 +427,7 @@ class PROP(enum.Enum) :
     #end fc_type
 
 #end PROP
+PROP.prop = dict((p.value, p) for p in PROP)
 
 #+
 # Routine arg/result types
@@ -1691,7 +1692,7 @@ class Pattern :
             pname = name
             name = name.value
         else :
-            pname = PROP[name]
+            pname = PROP.prop[name]
         #end if
         func, c_type, extr = convs[pname.fc_type]
         c_arg = c_type()
@@ -1736,7 +1737,7 @@ class Pattern :
         for prop in PROP :
             id = 0
             while True :
-                status, result = self.get(prop.value, id)
+                result, status = self.get(prop, id)
                 if status != FC.ResultMatch :
                     break
                 yield prop, id, result
