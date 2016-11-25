@@ -920,7 +920,11 @@ class ObjectSet :
 #end ObjectSet
 
 class Blanks :
-    "wrapper for FcBlanks objects. Do not instantiate directly: use the create method.\n" \
+    "wrapper for FcBlanks objects, which represent a set of character codes which" \
+    " are expected to be blank. These are used, for example, when scanning fonts," \
+    " to distinguish blank characters from unmapped ones.\n" \
+    "\n" \
+    "Do not instantiate directly: use the create method.\n" \
     "\n" \
     "Note the methods available are very limited, e.g. no enumeration of members or" \
     " determination of cardinality."
