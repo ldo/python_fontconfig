@@ -629,8 +629,8 @@ fc.FcPatternHash.argtypes = (ct.c_void_p,)
 #fc.FcPatternAdd.argtypes = (ct.c_void_p, ct.c_char_p, FC.Value, FC.Bool)
 #fc.FcPatternAddWeak.restype = FC.Bool
 #fc.FcPatternAddWeak.argtypes = (ct.c_void_p, ct.c_char_p, FC.Value, FC.Bool)
-#fc.FcPatternGet.restype = ct.c_uint
-#fc.FcPatternGet.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, FC.Value)
+fc.FcPatternGet.restype = ct.c_uint
+fc.FcPatternGet.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, ct.POINTER(FC.Value))
 fc.FcPatternDel.restype = FC.Bool
 fc.FcPatternDel.argtypes = (ct.c_void_p, ct.c_char_p)
 fc.FcPatternRemove.restype = FC.Bool
@@ -1668,7 +1668,7 @@ class Pattern :
                 FC.TypeMatrix : (fc.FcPatternGetMatrix, FC.Matrix, lambda v : Matrix.from_fc(v.m.contents)),
                 FC.TypeCharSet : (fc.FcPatternGetCharSet, ct.c_void_p, lambda c : CharSet(c, False).from_fc()),
                 FC.TypeBool : (fc.FcPatternGetBool, FC.Bool, lambda b : b != 0),
-                # no fc.FcPatternGetFtFace?
+                FC.TypeFTFace : (fc.FcPatternGet, ct.c_void_p, None), # return void pointer for now
                 FC.TypeLangSet : (fc.FcPatternGetLangSet, ct.c_void_p, lambda l : LangSet(l, False).langs),
             }
 
@@ -1679,25 +1679,20 @@ class Pattern :
         else :
             pname = PROP[name]
         #end if
-        if pname.fc_type in convs :
-            func, c_type, extr = convs[pname.fc_type]
-            c_arg = c_type()
-            status = func(self._fcobj, name.encode(), id, ct.byref(c_arg))
-            if status == FC.ResultTypeMismatch :
-                raise TypeError("value is not of expected type")
-            #end if
-            if status == FC.ResultMatch :
-                if extr != None :
-                    result = extr(c_arg)
-                else :
-                    result = c_arg.value
-                #end if
+        func, c_type, extr = convs[pname.fc_type]
+        c_arg = c_type()
+        status = func(self._fcobj, name.encode(), id, ct.byref(c_arg))
+        if status == FC.ResultTypeMismatch :
+            raise TypeError("value is not of expected type")
+        #end if
+        if status == FC.ResultMatch :
+            if extr != None :
+                result = extr(c_arg)
             else :
-                result = None
+                result = c_arg.value
             #end if
         else :
-            # fake ignorance for now
-            result, status = None, FC.ResultNoMatch
+            result = None
         #end if
         return \
             (result, status)
