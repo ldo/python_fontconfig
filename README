@@ -111,7 +111,8 @@ this:
     [«family»][:«prop»=«value»[:«prop»=«value»...]]
 
 where «family» is the family name, and each «prop» is a property name
-and «value» the corresponding property value.
+and «value» the corresponding property value. All parts are optional:
+even the empty string is a valid pattern!
 
 Whatever pattern you specify, Fontconfig will always find a match, as
 long as it knows of at least one font installed on your system. For
@@ -179,4 +180,4 @@ by
     print(found.name_unparse())
 
 Lawrence D'Oliveiro <ldo@geek-central.gen.nz>
-2016 November 23
+2016 November 25
