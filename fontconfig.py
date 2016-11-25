@@ -1245,7 +1245,7 @@ class Config :
         #end if
         nr_sets, f_sets, c_sets = FontSet.to_fc_list(sets)
         if want_coverage :
-            coverage = CharSet(set(), True)
+            coverage = CharSet.to_fc(set())
         else :
             coverage = None
         #end if
@@ -1273,7 +1273,7 @@ class Config :
             raise TypeError("pat must be a Pattern")
         #end if
         if want_coverage :
-            coverage = CharSet(set(), True)
+            coverage = CharSet.to_fc(set())
         else :
             coverage = None
         #end if
@@ -1307,6 +1307,9 @@ class CharSet :
         )
 
     def __init__(self, _fcobj, _created) :
+        if isinstance(_fcobj, ct.c_void_p) :
+            _fcobj = _fcobj.value
+        #end if
         self._fcobj = _fcobj
         self._created = _created
     #end __init__
@@ -1334,15 +1337,22 @@ class CharSet :
         result = set()
         page = FC.charset_page()
         retrieve = fc.FcCharSetFirstPage
-        next = FC.Char32()
+        next = FC.Char32(0)
         while True :
+            prev = next.value
             base = retrieve(self._fcobj, ct.byref(page), ct.byref(next))
             if base == FC.CHARSET_DONE :
                 break
+            if next.value == prev :
+                # happens intermittently!?
+                #raise AssertionError("CharSet page empty at base = %08x, page = %08x\n" % (base, next.value))
+                break
+            #end if
             for i in range(len(page)) :
                 for j in range(32) :
                     if 1 << j & page[i] != 0 :
                         result.add(base + i * 32 + j)
+                        got_one = True
                     #end if
                 #end for
             #end for
