@@ -1668,7 +1668,7 @@ class Pattern :
                 FC.TypeMatrix : (fc.FcPatternGetMatrix, FC.Matrix, lambda v : Matrix.from_fc(v.m.contents)),
                 FC.TypeCharSet : (fc.FcPatternGetCharSet, ct.c_void_p, lambda c : CharSet(c, False).from_fc()),
                 FC.TypeBool : (fc.FcPatternGetBool, FC.Bool, lambda b : b != 0),
-                FC.TypeFTFace : (fc.FcPatternGet, ct.c_void_p, None), # return void pointer for now
+                FC.TypeFTFace : (fc.FcPatternGet, FC.Value, lambda v : v.u.f), # return void pointer for now
                 FC.TypeLangSet : (fc.FcPatternGetLangSet, ct.c_void_p, lambda l : LangSet(l, False).langs),
             }
 
