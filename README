@@ -179,5 +179,71 @@ by
 
     print(found.name_unparse())
 
+
+Font Coverage And Fallback
+==========================
+
+There is a common need to find fonts that cover certain given ranges
+of code points. This includes finding suitable “fallback” fonts to
+cover missing code points not present within a given font.
+
+For example, the set of basic Arabic code points can be constructed
+as follows:
+
+    coverage_wanted = set(range(0x0600, 0x06FF + 1))
+
+(Note that this is a standard Python set of integer character codes.
+Fontconfig defines its own `FcCharSet` type, but this is automatically
+converted to a Python set wherever it is returned from a call, and
+a Python set is passed wherever the Fontconfig call expects an object
+of this type.)
+
+Now we can construct a `Pattern` to find fonts giving this coverage:
+
+    pat = fc.Pattern.create \
+      (
+        vals =
+            (
+                (fc.PROP.CHARSET, coverage_wanted),
+            )
+      )
+    conf.substitute(pat, FC.MatchPattern)
+    pat.default_substitute()
+
+(Note the convenience option of being able to directly pass a tuple of
+(«property», «value») pairs to the `Pattern.create` call, to be added
+to the new `Pattern` object.)
+
+Now we can find a list of fonts in descending order of suitability as follows:
+
+    found, total_coverage, status = conf.font_sort(pat, trim = True, want_coverage = True)
+
+where the `trim` arg says not to bother including fonts that only
+cover code points already handled by prior fonts, and `want_coverage`
+says that the `total_coverage` variable should return a set of all the
+code points covered by the fonts in `found`; this can be used, for
+example, to see if there are any code points still missing from the
+available fonts.
+
+The following loop prints out some basic information about the fonts
+in `found`, including which code points in `coverage_wanted` are
+missing from the font’s character set:
+
+    for i, f in enumerate(found) :
+        missing = coverage_wanted - f.get(fc.PROP.CHARSET, 0)[0]
+        sys.stdout.write \
+          (
+                "found[%d]: %s (%s), missing(%d) = %s\n"
+            %
+                (
+                    i,
+                    f.get(fc.PROP.FAMILY, 0)[0],
+                    f.get(fc.PROP.STYLE, 0)[0],
+                    len(missing),
+                    repr(missing),
+                )
+          )
+    #end for
+
 Lawrence D'Oliveiro <ldo@geek-central.gen.nz>
 2016 November 25
