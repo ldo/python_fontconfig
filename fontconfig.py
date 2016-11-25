@@ -1246,9 +1246,11 @@ class Config :
         #end if
         nr_sets, f_sets, c_sets = FontSet.to_fc_list(sets)
         if want_coverage :
-            coverage = CharSet.to_fc(set())
+            c_coverage = ct.c_void_p()
+            coverage_arg = ct.byref(c_coverage)
         else :
-            coverage = None
+            c_coverage = None
+            coverage_arg = None
         #end if
         result_status = ct.c_uint()
         result_set = fc.FcFontSetSort \
@@ -1258,9 +1260,12 @@ class Config :
             nr_sets,
             pat._fcobj,
             FC.Bool(trim),
-            (lambda : None, lambda : coverage._fcobj)[want_coverage](),
+            coverage_arg,
             ct.byref(result_status)
           )
+        if want_coverage :
+            coverage = CharSet(c_coverage.value, True)
+        #end if
         return \
             (
                 FontSet(result_set, True).from_fc(),
@@ -1274,9 +1279,11 @@ class Config :
             raise TypeError("pat must be a Pattern")
         #end if
         if want_coverage :
-            coverage = CharSet.to_fc(set())
+            c_coverage = ct.c_void_p()
+            coverage_arg = ct.byref(c_coverage)
         else :
-            coverage = None
+            c_coverage = None
+            coverage_arg = None
         #end if
         result_status = ct.c_uint()
         result_set = fc.FcFontSort \
@@ -1284,9 +1291,12 @@ class Config :
             self._fcobj,
             pat._fcobj,
             FC.Bool(trim),
-            (lambda : None, lambda : coverage._fcobj)[want_coverage](),
+            coverage_arg,
             ct.byref(result_status)
           )
+        if want_coverage :
+            coverage = CharSet(c_coverage.value, True)
+        #end if
         return \
             (
                 FontSet(result_set, True).from_fc(),
