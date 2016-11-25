@@ -1664,8 +1664,8 @@ class Pattern :
             {
                 FC.TypeInteger : (fc.FcPatternGetInteger, ct.c_int, None),
                 FC.TypeDouble : (fc.FcPatternGetDouble, ct.c_double, None),
-                FC.TypeString : (fc.FcPatternGetString, ct.c_void_p, lambda p : cast(p, ct.c_char_p).decode()),
-                FC.TypeMatrix : (fc.fc.FcPatternGetMatrix, FC.Matrix, lambda v : Matrix.from_fc(v.m.contents)),
+                FC.TypeString : (fc.FcPatternGetString, ct.c_void_p, lambda p : ct.cast(p, ct.c_char_p).value.decode()),
+                FC.TypeMatrix : (fc.FcPatternGetMatrix, FC.Matrix, lambda v : Matrix.from_fc(v.m.contents)),
                 FC.TypeCharSet : (fc.FcPatternGetCharSet, ct.c_void_p, lambda c : CharSet(c, False).from_fc()),
                 FC.TypeBool : (fc.FcPatternGetBool, FC.Bool, lambda b : b != 0),
                 # no fc.FcPatternGetFtFace?
@@ -1679,23 +1679,28 @@ class Pattern :
         else :
             pname = PROP[name]
         #end if
-        func, c_type, extr = convs[pname.fc_type]
-        c_arg = c_type()
-        status = func(self._fcobj, name.encode(), id, ct.byref(c_arg))
-        if status == FC.ResultTypeMismatch :
-            raise TypeError("value is not of expected type")
-        #end if
-        if status == FC.ResultMatch :
-            if extr != None :
-                result = extr(c_arg)
+        if pname.fc_type in convs :
+            func, c_type, extr = convs[pname.fc_type]
+            c_arg = c_type()
+            status = func(self._fcobj, name.encode(), id, ct.byref(c_arg))
+            if status == FC.ResultTypeMismatch :
+                raise TypeError("value is not of expected type")
+            #end if
+            if status == FC.ResultMatch :
+                if extr != None :
+                    result = extr(c_arg)
+                else :
+                    result = c_arg.value
+                #end if
             else :
-                result = c_arg.value
+                result = None
             #end if
         else :
-            result = None
+            # fake ignorance for now
+            result, status = None, FC.ResultNoMatch
         #end if
         return \
-            (status, result)
+            (result, status)
     #end get
 
     def remove_all(self, name) :
