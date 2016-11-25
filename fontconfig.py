@@ -64,7 +64,7 @@ class FC :
     HINT_STYLE = "hintstyle" # Int
     VERTICAL_LAYOUT = "verticallayout" # Bool (false)
     AUTOHINT = "autohint" # Bool (false)
-    # FC_GLOBAL_ADVANCE is deprecated. this is simply ignored on freetype 2.4.5 or later
+    # GLOBAL_ADVANCE is deprecated. this is simply ignored on freetype 2.4.5 or later
     GLOBAL_ADVANCE = "globaladvance" # Bool (true)
     WIDTH = "width" # Int
     FILE = "file" # String
@@ -287,7 +287,7 @@ class PROP(enum.Enum) :
     HINT_STYLE = "hintstyle" # Int
     VERTICAL_LAYOUT = "verticallayout" # Bool (false)
     AUTOHINT = "autohint" # Bool (false)
-    # FC_GLOBAL_ADVANCE is deprecated. this is simply ignored on freetype 2.4.5 or later
+    # GLOBAL_ADVANCE is deprecated. this is simply ignored on freetype 2.4.5 or later
     GLOBAL_ADVANCE = "globaladvance" # Bool (true)
     WIDTH = "width" # Int
     FILE = "file" # String
@@ -319,6 +319,113 @@ class PROP(enum.Enum) :
     PRGNAME = "prgname" # String
     HASH = "hash" # String
     POSTSCRIPT_NAME = "postscriptname" # String
+
+    @property
+    def type(self) :
+        return \
+            {
+                PROP.FAMILY : str,
+                PROP.STYLE : str,
+                PROP.SLANT : int,
+                PROP.WEIGHT : int,
+                PROP.SIZE : float,
+                PROP.ASPECT : float,
+                PROP.PIXEL_SIZE : float,
+                PROP.SPACING : int,
+                PROP.FOUNDRY : str,
+                PROP.ANTIALIAS : bool,
+                PROP.HINTING : bool,
+                PROP.HINT_STYLE : int,
+                PROP.VERTICAL_LAYOUT : bool,
+                PROP.AUTOHINT : bool,
+                # GLOBAL_ADVANCE is deprecated. this is simply ignored on freetype 2.4.5 or later
+                PROP.GLOBAL_ADVANCE : bool,
+                PROP.WIDTH : int,
+                PROP.FILE : str,
+                PROP.INDEX : int,
+                # FT_FACE TODO
+                PROP.RASTERIZER : str, # (deprecated)
+                PROP.OUTLINE : bool,
+                PROP.SCALABLE : bool,
+                PROP.SCALE : float,
+                PROP.DPI : float,
+                PROP.RGBA : int,
+                PROP.MINSPACE : bool,
+                PROP.SOURCE : str, # (deprecated)
+                PROP.CHARSET : set,
+                PROP.LANG : str,
+                PROP.FONTVERSION : int,
+                PROP.FULLNAME : str,
+                PROP.FAMILYLANG : str,
+                PROP.STYLELANG : str,
+                PROP.FULLNAMELANG : str,
+                PROP.CAPABILITY : str,
+                PROP.FONTFORMAT : str,
+                PROP.EMBOLDEN : bool,
+                PROP.EMBEDDED_BITMAP : bool,
+                PROP.DECORATIVE : bool,
+                PROP.LCD_FILTER : int,
+                PROP.FONT_FEATURES : str,
+                PROP.NAMELANG : str,
+                PROP.PRGNAME : str,
+                PROP.HASH : str,
+                PROP.POSTSCRIPT_NAME : str,
+            }[self]
+    #end type
+
+    @property
+    def fc_type(self) :
+        return \
+            {
+                PROP.FAMILY : FC.TypeString,
+                PROP.STYLE : FC.TypeString,
+                PROP.SLANT : FC.TypeInteger,
+                PROP.WEIGHT : FC.TypeInteger,
+                PROP.SIZE : FC.TypeDouble,
+                PROP.ASPECT : FC.TypeDouble,
+                PROP.PIXEL_SIZE : FC.TypeDouble,
+                PROP.SPACING : FC.TypeInteger,
+                PROP.FOUNDRY : FC.TypeString,
+                PROP.ANTIALIAS : FC.TypeBool,
+                PROP.HINTING : FC.TypeBool,
+                PROP.HINT_STYLE : FC.TypeInteger,
+                PROP.VERTICAL_LAYOUT : FC.TypeBool,
+                PROP.AUTOHINT : FC.TypeBool,
+                # GLOBAL_ADVANCE is deprecated. this is simply ignored on freetype 2.4.5 or later
+                PROP.GLOBAL_ADVANCE : FC.TypeBool,
+                PROP.WIDTH : FC.TypeInteger,
+                PROP.FILE : FC.TypeString,
+                PROP.INDEX : FC.TypeInteger,
+                PROP.FT_FACE : FC.TypeFTFace,
+                PROP.RASTERIZER : FC.TypeString, # (deprecated)
+                PROP.OUTLINE : FC.TypeBool,
+                PROP.SCALABLE : FC.TypeBool,
+                PROP.SCALE : FC.TypeDouble,
+                PROP.DPI : FC.TypeDouble,
+                PROP.RGBA : FC.TypeInteger,
+                PROP.MINSPACE : FC.TypeBool,
+                PROP.SOURCE : FC.TypeString, # (deprecated)
+                PROP.CHARSET : FC.TypeCharSet,
+                PROP.LANG : FC.TypeString,
+                PROP.FONTVERSION : FC.TypeInteger,
+                PROP.FULLNAME : FC.TypeString,
+                PROP.FAMILYLANG : FC.TypeString,
+                PROP.STYLELANG : FC.TypeString,
+                PROP.FULLNAMELANG : FC.TypeString,
+                PROP.CAPABILITY : FC.TypeString,
+                PROP.FONTFORMAT : FC.TypeString,
+                PROP.EMBOLDEN : FC.TypeBool,
+                PROP.EMBEDDED_BITMAP : FC.TypeBool,
+                PROP.DECORATIVE : FC.TypeBool,
+                PROP.LCD_FILTER : FC.TypeInteger,
+                PROP.FONT_FEATURES : FC.TypeString,
+                PROP.NAMELANG : FC.TypeString,
+                PROP.PRGNAME : FC.TypeString,
+                PROP.HASH : FC.TypeString,
+                PROP.POSTSCRIPT_NAME : FC.TypeString,
+            }[self]
+    #end fc_type
+
 #end PROP
 
 #+
@@ -1551,7 +1658,7 @@ class Pattern :
         #end for
     #end build
 
-    def get(self, name, id, fctype) :
+    def get(self, name, id) :
 
         convs = \
             {
@@ -1566,13 +1673,13 @@ class Pattern :
             }
 
     #begin get
-        if fctype not in convs :
-            raise ValueError("type code not one of the valid FC.Typexxx values")
-        #end if
         if isinstance(name, PROP) :
+            pname = name
             name = name.value
+        else :
+            pname = PROP[name]
         #end if
-        func, c_type, extr = convs[fctype]
+        func, c_type, extr = convs[pname.fc_type]
         c_arg = c_type()
         status = func(self._fcobj, name.encode(), id, ct.byref(c_arg))
         if status == FC.ResultTypeMismatch :
