@@ -25,6 +25,11 @@ import enum
 import ctypes as ct
 from weakref import \
     WeakValueDictionary
+try :
+    import freetype2 as freetype
+except ImportError :
+    freetype = None
+#end try
 
 fc = ct.cdll.LoadLibrary("libfontconfig.so.1")
 
@@ -343,7 +348,7 @@ class PROP(enum.Enum) :
                 PROP.WIDTH : int,
                 PROP.FILE : str,
                 PROP.INDEX : int,
-                # FT_FACE TODO
+                PROP.FT_FACE : (lambda : None, lambda : freetype.face)[freetype != None](),
                 PROP.RASTERIZER : str, # (deprecated)
                 PROP.OUTLINE : bool,
                 PROP.SCALABLE : bool,
@@ -696,6 +701,21 @@ fc.FcStrListNext.restype = ct.c_char_p
 fc.FcStrListNext.argtypes = (ct.c_void_p,)
 fc.FcStrListDone.restype = None
 fc.FcStrListDone.argtypes = (ct.c_void_p,)
+
+# from fcfreetype.h
+
+fc.FcPatternGetFTFace.restype = ct.c_uint
+fc.FcPatternGetFTFace.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, ct.POINTER(ct.c_void_p))
+  # TODO: How can I implement a wrapper for this? Problem with getting back FT_Face pointers
+  # is I need a FreeType library to associate with them. Looks like Fontconfig itself
+  # does not create any (non-transient) library instance, so the only FT_Face pointers
+  # you get back from it are ones that you passed to it in the first place. So
+  # perhaps I could solve the problem by having the caller give me a library instance,
+  # most likely just a single global one.
+fc.FcPatternAddFTFace.restype = FC.Bool
+fc.FcPatternAddFTFace.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_void_p)
+
+# other
 
 libc.free.argtypes = (ct.c_void_p,)
 
@@ -1630,9 +1650,11 @@ class Pattern :
                 Matrix : (fc.FcPatternAddMatrix, lambda m : m.to_fc(), lambda m : m._fcobj, True),
                 set : (fc.FcPatternAddCharSet, lambda c : CharSet.to_fc(c), lambda c : c._fcobj, False),
                 bool : (fc.FcPatternAddBool, lambda b : FC.Bool(b), None, False),
-                # TODO: FTFace
                 LangSet : (fc.FcPatternAddLangSet, None, lambda l : l._fcobj, False),
             }
+        if freetype != None :
+            convs[freetype.Face] = (fc.FcPatternAddFTFace, lambda f : f._ftobj, False),
+        #end if
 
     #begin add
         if isinstance(name, PROP) :
