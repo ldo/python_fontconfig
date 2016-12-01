@@ -1796,7 +1796,7 @@ if freetype != None :
         else :
             c_blanks = None
         #end if
-        result = FcFreeTypeQueryFace(face._fcobj, filename.encode(), id, c_blanks)
+        result = fc.FcFreeTypeQueryFace(face._ftobj, filename.encode(), id, c_blanks)
           # newly-created Pattern object
         return \
             Pattern(result)
