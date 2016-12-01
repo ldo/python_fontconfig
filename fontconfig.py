@@ -325,6 +325,26 @@ class PROP(enum.Enum) :
     HASH = "hash" # String
     POSTSCRIPT_NAME = "postscriptname" # String
 
+    @classmethod
+    def ensure_prop(celf, name) :
+        "name can be a PROP or a string, always returns a PROP."
+        if not isinstance(name, celf) :
+            name = celf.prop[name]
+        #end if
+        return \
+            name
+    #end ensure_prop
+
+    @classmethod
+    def ensure_str(celf, name) :
+        "name can be a PROP or a string, always returns a string."
+        if isinstance(name, celf) :
+            name = name.value
+        #end if
+        return \
+            name
+    #end ensure_str
+
     @property
     def type(self) :
         return \
@@ -1722,15 +1742,10 @@ class Pattern :
             }
 
     #begin get
-        if isinstance(name, PROP) :
-            pname = name
-            name = name.value
-        else :
-            pname = PROP.prop[name]
-        #end if
-        func, c_type, extr = convs[pname.fc_type]
+        name = PROP.ensure_prop(name)
+        func, c_type, extr = convs[name.fc_type]
         c_arg = c_type()
-        status = func(self._fcobj, name.encode(), id, ct.byref(c_arg))
+        status = func(self._fcobj, name.value.encode(), id, ct.byref(c_arg))
         if status == FC.ResultTypeMismatch :
             raise TypeError("value is not of expected type")
         #end if
@@ -1748,11 +1763,13 @@ class Pattern :
     #end get
 
     def remove_all(self, name) :
+        name = PROP.ensure_str(name)
         return \
             fc.FcPatternDel(self._fcobj, name.encode()) != 0
     #end remove_all
 
     def remove(self, name, id) :
+        name = PROP.ensure_str(name)
         return \
             fc.FcPatternRemove(self._fcobj, name.encode(), id) != 0
     #end remove
