@@ -714,6 +714,8 @@ fc.FcPatternGetFTFace.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, ct.POINTER
   # most likely just a single global one.
 fc.FcPatternAddFTFace.restype = FC.Bool
 fc.FcPatternAddFTFace.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_void_p)
+fc.FcFreeTypeQueryFace.restype = ct.c_void_p
+fc.FcFreeTypeQueryFace.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, ct.c_void_p)
 
 # other
 
@@ -1779,6 +1781,28 @@ class Pattern :
     #end each_prop
 
 #end Pattern
+
+if freetype != None :
+
+    def freetype_query_face(face, filename, id, blanks) :
+        if not isinstance(face, freetype.Face) :
+            raise TypeError("face must be a freetype.Face")
+        #end if
+        if blanks != None and not isinstance(blanks, Blanks) :
+            raise TypeError("blanks must be None or a Blanks")
+        #end if
+        if blanks != None :
+            c_blanks = blanks._fcobj
+        else :
+            c_blanks = None
+        #end if
+        result = FcFreeTypeQueryFace(face._fcobj, filename.encode(), id, c_blanks)
+          # newly-created Pattern object
+        return \
+            Pattern(result)
+    #end freetype_query_face
+
+#end if
 
 class StrSet :
     "wrapper around FcStrSet objects. For internal use only: all relevant" \
