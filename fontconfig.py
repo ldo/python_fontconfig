@@ -700,8 +700,6 @@ fc.FcStrFree.restype = None
 fc.FcStrFree.argtypes = (ct.c_void_p,)
 # probably don’t need rest of str/utf stuff
 
-# TODO: xml
-
 fc.FcStrCopyFilename.restype = ct.c_char_p
 fc.FcStrCopyFilename.argtypes = (ct.c_char_p,)
 
@@ -721,6 +719,9 @@ fc.FcStrListNext.restype = ct.c_char_p
 fc.FcStrListNext.argtypes = (ct.c_void_p,)
 fc.FcStrListDone.restype = None
 fc.FcStrListDone.argtypes = (ct.c_void_p,)
+
+fc.FcConfigParseAndLoad.restype = FC.Bool
+fc.FcConfigParseAndLoad.argtypes = (ct.c_void_p, ct.c_char_p, FC.Bool)
 
 # from fcfreetype.h
 
@@ -1346,6 +1347,12 @@ class Config :
                 result_status.value
             )
     #end font_sort
+
+    def parse_and_load(self, filename, complain) :
+        if fc.FcConfigParseAndLoad(self._fcobj, filename.encode(), FC.Bool(complain)) == 0 :
+            raise FontconfigError("FcConfigParseAndLoad failure")
+        #end if
+    #end parse_and_load
 
 #end Config
 
