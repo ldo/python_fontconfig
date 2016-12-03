@@ -1125,7 +1125,7 @@ class Config :
     @property
     def blanks(self) :
         return \
-            Blanks(fc.FcConfigGetBlanks(self._fcobj, False))
+            Blanks(fc.FcConfigGetBlanks(self._fcobj), False)
     #end blanks
 
     @property
