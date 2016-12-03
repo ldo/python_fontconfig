@@ -727,12 +727,6 @@ fc.FcConfigParseAndLoad.argtypes = (ct.c_void_p, ct.c_char_p, FC.Bool)
 
 fc.FcPatternGetFTFace.restype = ct.c_uint
 fc.FcPatternGetFTFace.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, ct.POINTER(ct.c_void_p))
-  # TODO: How can I implement a wrapper for this? Problem with getting back FT_Face pointers
-  # is I need a FreeType library to associate with them. Looks like Fontconfig itself
-  # does not create any (non-transient) library instance, so the only FT_Face pointers
-  # you get back from it are ones that you passed to it in the first place. So
-  # perhaps I could solve the problem by having the caller give me a library instance,
-  # most likely just a single global one.
 fc.FcPatternAddFTFace.restype = FC.Bool
 fc.FcPatternAddFTFace.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_void_p)
 fc.FcFreeTypeQueryFace.restype = ct.c_void_p
@@ -1744,9 +1738,13 @@ class Pattern :
                 FC.TypeMatrix : (fc.FcPatternGetMatrix, FC.Matrix, lambda v : Matrix.from_fc(v.m.contents)),
                 FC.TypeCharSet : (fc.FcPatternGetCharSet, ct.c_void_p, lambda c : CharSet(c, False).from_fc()),
                 FC.TypeBool : (fc.FcPatternGetBool, FC.Bool, lambda b : b != 0),
-                FC.TypeFTFace : (fc.FcPatternGet, FC.Value, lambda v : v.u.f), # return void pointer for now
+                FC.TypeFTFace : (fc.FcPatternGetFTFace, ct.c_void_p, lambda p : p.value), # return void pointer if python_freetype is not available
                 FC.TypeLangSet : (fc.FcPatternGetLangSet, ct.c_void_p, lambda l : LangSet(l, False).langs),
             }
+        if freetype != None :
+            convs[FC.TypeFTFace] = \
+                (fc.FcPatternGetFTFace, ct.c_void_p, lambda p : freetype.Face(None, p.value, None))
+        #end if
 
     #begin get
         name = PROP.ensure_prop(name)
