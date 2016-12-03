@@ -1682,7 +1682,7 @@ class Pattern :
                 LangSet : (fc.FcPatternAddLangSet, None, lambda l : l._fcobj, False),
             }
         if freetype != None :
-            convs[freetype.Face] = (fc.FcPatternAddFTFace, lambda f : f._ftobj, False),
+            convs[freetype.Face] = (fc.FcPatternAddFTFace, None, lambda f : f._ftobj, False)
         #end if
 
     #begin add
