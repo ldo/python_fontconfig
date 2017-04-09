@@ -19,10 +19,12 @@ You may not actually need to use this module. If you are making use of
 any of my Python wrappers for other major parts of the Linux
 typography stack, namely
 
-* [Qahirah](https://github.com/ldo/qahirah) -- my binding for the
-  Cairo graphics library
-* [python_freetype](https://github.com/ldo/python_freetype) -- my
-  binding for FreeType
+* Qahirah ([GitLab](https://gitlab.com/ldo/qahirah),
+  [GitHub](https://github.com/ldo/qahirah)) -- my binding for the
+  [Cairo](https://www.cairographics.org/) graphics library
+* python_freetype ([GitLab](https://gitlab.com/ldo/python_freetype),
+  [GitHub](https://github.com/ldo/python_freetype)) -- my binding for
+  [FreeType](https://www.freetype.org/)
 
 then these already include their own mini-wrappers for Fontconfig,
 that are sufficient for finding fonts using default system
@@ -246,4 +248,4 @@ missing from the font’s character set:
     #end for
 
 Lawrence D'Oliveiro <ldo@geek-central.gen.nz>
-2016 November 25
+2017 April 9
