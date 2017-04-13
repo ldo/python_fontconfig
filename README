@@ -194,6 +194,15 @@ as follows:
 
     coverage_wanted = set(range(0x0600, 0x06FF + 1))
 
+Restricting this to currently-defined code points--or at least, those
+that Python knows about in its `unicodedata` module:
+
+    coverage_wanted -= set \
+      (
+        c for c in coverage_wanted
+        if unicodedata.name(chr(c), None) == None
+      )
+
 (Note that this is a standard Python set of integer character codes.
 Fontconfig defines its own `FcCharSet` type, but this is automatically
 converted to a Python set wherever it is returned from a call, and
@@ -248,4 +257,4 @@ missing from the font’s character set:
     #end for
 
 Lawrence D'Oliveiro <ldo@geek-central.gen.nz>
-2017 April 9
+2017 April 13
