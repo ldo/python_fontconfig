@@ -1591,7 +1591,7 @@ class Pattern :
     @classmethod
     def freetype_query(celf, filename, id, blanks) :
         if blanks != None and not isinstance(blanks, Blanks) :
-            raise TypeError("blanks must be a Blanks")
+            raise TypeError("blanks must be None or a Blanks")
         #end if
         count = ct.c_int()
         pat = fc.FcFreeTypeQuery \
