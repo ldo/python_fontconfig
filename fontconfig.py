@@ -1705,10 +1705,9 @@ class Pattern :
         #end if
         func, wrap, extr, byref = convs[conv_type]
         if wrap != None :
-            wrapper = wrap(value)
+            value1 = wrap(value)
               # keep reference to this Python object so ctypes object does not
               # disappear prematurely
-            value1 = wrapper
         else :
             value1 = value
         #end if
