@@ -738,30 +738,33 @@ fc.FcFreeTypeQueryFace.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, ct.c_void
 
 libc.free.argtypes = (ct.c_void_p,)
 
-class FontconfigError(Exception) :
-    "just to identify a Fontconfig-specific error exception."
+class CallFailed(Exception) :
+    "used internally for reporting general failure from calling a Fontconfig routine."
 
-    def __init__(self, msg) :
-        self.msg = msg
+    __slots__ = ("funcname",)
+
+    def __init__(self, funcname) :
+        self.args = ("%s failed" % funcname,)
+        self.funcname = funcname
     #end __init__
 
-#end FontconfigError
+#end CallFailed
 
 def init() :
     if fc.FcInit() == 0 :
-        raise FontconfigError("FcInit failure")
+        raise CallFailed("FcInit")
     #end if
 #end init
 
 def reinitialize() :
     if fc.FcInitReinitialize() == 0 :
-        raise FontconfigError("FcInitReinitialize failure")
+        raise CallFailed("FcInitReinitialize")
     #end if
 #end reinitialize
 
 def init_bring_uptodate() :
     if fc.FcInitBringUptoDate() == 0 :
-        raise FontconfigError("FcInitBringUptoDate failure")
+        raise CallFailed("FcInitBringUptoDate")
     #end if
 #end init_bring_uptodate
 
@@ -782,7 +785,7 @@ def get_langs() :
 def lang_normalize(langname) :
     norm = fc.FcLangNormalize(langname.encode())
     if norm == None :
-        raise FontconfigError("FcLangNormalize failure")
+        raise CallFailed("FcLangNormalize")
     #end if
     result = ct.cast(norm, ct.c_char_p).value.decode()
     fc.FcStrFree(norm)
@@ -827,13 +830,13 @@ class LangSet :
 
     def add(self, lang) :
         if fc.FcLangSetAdd(self._fcobj, lang.encode()) == 0 :
-            raise FontconfigError("FcLangSetAdd failure")
+            raise CallFailed("FcLangSetAdd")
         #end if
     #end add
 
     def remove(self, lang) :
         if fc.FcLangSetDel(self._fcobj, lang.encode()) == 0 :
-            raise FontconfigError("FcLangSetDel failure")
+            raise CallFailed("FcLangSetDel")
         #end if
     #end remove
 
@@ -1009,7 +1012,7 @@ class Blanks :
 
     def add(self, elt) :
         if fc.FcBlanksAdd(self._fcobj, elt) == 0 :
-            raise FontconfigError("FcBlanksAdd failure")
+            raise CallFailed("FcBlanksAdd")
         #end if
     #end add
 
@@ -1079,7 +1082,7 @@ class Config :
 
     def set_current(self) :
         if fc.FcConfigSetCurrent(self._fcobj) == 0 :
-            raise FontconfigError("FcConfigSetCurrent failure")
+            raise CallFailed("FcConfigSetCurrent")
         #end if
     #end set_current
 
@@ -1097,7 +1100,7 @@ class Config :
 
     def build_fonts(self) :
         if fc.FcConfigBuildFonts(self._fcobj) == 0 :
-            raise FontconfigError("FcConfigBuildFonts failure")
+            raise CallFailed("FcConfigBuildFonts")
         #end if
     #end build_fonts
 
@@ -1140,7 +1143,7 @@ class Config :
     @rescan_interval.setter
     def rescan_interval(self, interval) :
         if fc.FcConfigSetRescanInterval(self._fcobj, interval) == 0 :
-            raise FontconfigError("FcConfigSetRescanInterval failure")
+            raise CallFailed("FcConfigSetRescanInterval")
         #end if
     #end rescan_interval
 
@@ -1159,13 +1162,13 @@ class Config :
 
     def app_font_add_file(self, filename) :
         if fc.FcConfigAppFontAddFile(self._fcobj, filename.encode()) == 0 :
-            raise FontconfigError("FcConfigAppFontAddFile failure")
+            raise CallFailed("FcConfigAppFontAddFile")
         #end if
     #end app_font_add_file
 
     def app_font_add_dir(self, dirname) :
         if fc.FcConfigAppFontAddDir(self._fcobj, dirname.encode()) == 0 :
-            raise FontconfigError("FcConfigAppFontAddDir failure")
+            raise CallFailed("FcConfigAppFontAddDir")
         #end if
     #end app_font_add_dir
 
@@ -1179,7 +1182,7 @@ class Config :
             raise TypeError("second and third args must be Patterns")
         #end if
         if fc.FcConfigSubstituteWithPat(self._fcobj, p._fcobj, p_pat._fcobj, kind) == 0 :
-            raise FontconfigError("FcConfigSubstituteWithPat failure")
+            raise CallFailed("FcConfigSubstituteWithPat")
         #end if
     #end substitute_with_pat
 
@@ -1189,7 +1192,7 @@ class Config :
             raise TypeError("second arg must be Pattern")
         #end if
         if fc.FcConfigSubstitute(self._fcobj, p._fcobj, kind) == 0 :
-            raise FontconfigError("FcConfigSubstitute failure")
+            raise CallFailed("FcConfigSubstitute")
         #end if
     #end substitute
 
@@ -1346,7 +1349,7 @@ class Config :
 
     def parse_and_load(self, filename, complain) :
         if fc.FcConfigParseAndLoad(self._fcobj, filename.encode(), FC.Bool(complain)) == 0 :
-            raise FontconfigError("FcConfigParseAndLoad failure")
+            raise CallFailed("FcConfigParseAndLoad")
         #end if
     #end parse_and_load
 
@@ -1425,7 +1428,7 @@ class CharSet :
 def copy_filename(s) :
     result = fc.FcStrCopyFilename(s.encode())
     if not bool(result) :
-        raise FontconfigError("FcStrCopyFilename failure")
+        raise CallFailed("FcStrCopyFilename")
     #end if
     return \
         result.decode() # automatically stops at NUL?
@@ -1486,7 +1489,7 @@ class FontSet :
                 raise TypeError("element of patset is not a Pattern")
             #end if
             if fc.FcFontSetAdd(result._fcobj, pat._fcobj) == 0 :
-                raise FontconfigError("FcFontSetAdd failure")
+                raise CallFailed("FcFontSetAdd")
             #end if
         #end for
         return \
@@ -1720,7 +1723,7 @@ class Pattern :
             c_arg = c_value
         #end if
         if func(self._fcobj, name.encode(), c_arg) == 0 :
-            raise FontconfigError("FcPatternAdd failure")
+            raise CallFailed("FcPatternAdd")
         #end if
     #end add
 
@@ -1852,11 +1855,11 @@ class StrSet :
     def to_fc(celf, pyset) :
         result = fc.FcStrSetCreate()
         if result == None :
-            raise FontconfigError("FcStrSetCreate failure")
+            raise CallFailed("FcStrSetCreate")
         #end if
         for s in pyset :
             if fc.FcStrSetAdd(result, s) == 0 :
-                raise FontconfigError("FcStrSetAdd failure")
+                raise CallFailed("FcStrSetAdd")
             #end if
         #end for
         return \
