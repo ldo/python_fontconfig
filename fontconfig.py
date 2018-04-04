@@ -1239,8 +1239,14 @@ class Config :
         if not isinstance(pat, Pattern) :
             raise TypeError("pat must be a Pattern")
         #end if
-        os = ObjectSet.to_fc(props)
-        result = fc.FcFontList(self._fcobj, pat._fcobj, os._fcobj)
+        if props != None :
+            os = ObjectSet.to_fc(props)
+            c_props = os._fcobj
+        else :
+            c_props = None
+        #end if
+        # first arg to FcFontList can also be null, but I never take advantage of that
+        result = fc.FcFontList(self._fcobj, pat._fcobj, c_props)
         return \
             FontSet(result, True).from_fc()
     #end font_list
