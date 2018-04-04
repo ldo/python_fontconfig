@@ -3,7 +3,7 @@ A ctypes-based binding for the Fontconfig API, for Python
 3.4 or later.
 """
 #+
-# Copyright 2016 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>.
+# Copyright 2016, 2018 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>.
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -1601,7 +1601,7 @@ class Pattern :
 
     @classmethod
     def freetype_query(celf, filename, id, blanks) :
-        "constructs a pattern representing the font with index id in the font file" \
+        "constructs a Pattern representing the font with index id in the font file" \
         " with the given name. Also returns the count of fonts in the file."
         if blanks != None and not isinstance(blanks, Blanks) :
             raise TypeError("blanks must be None or a Blanks")
@@ -1617,6 +1617,31 @@ class Pattern :
         return \
             (celf(pat), count.value)
     #end freetype_query
+
+    if freetype != None :
+
+        @classmethod
+        def freetype_query_face(celf, face, filename, id, blanks) :
+            "constructs a Pattern representing the given freetype2.Face. It is assumed" \
+            " to have been the font with index id loaded from the specified file name;" \
+            " this information is included in the pattern."
+            if not isinstance(face, freetype.Face) :
+                raise TypeError("face must be a freetype.Face")
+            #end if
+            if blanks != None and not isinstance(blanks, Blanks) :
+                raise TypeError("blanks must be None or a Blanks")
+            #end if
+            if blanks != None :
+                c_blanks = blanks._fcobj
+            else :
+                c_blanks = None
+            #end if
+            result = fc.FcFreeTypeQueryFace(face._ftobj, filename.encode(), id, c_blanks)
+            return \
+                celf(result)
+        #end freetype_query_face
+
+    #end if
 
     def duplicate(self) :
         return \
@@ -1815,31 +1840,6 @@ class Pattern :
     #end each_prop
 
 #end Pattern
-
-if freetype != None :
-
-    def freetype_query_face(face, filename, id, blanks) :
-        "constructs a pattern representing the given freetype2.Face. It is assumed" \
-        " to have been the font with index id loaded from the specified file name;" \
-        " this information is included in the pattern."
-        if not isinstance(face, freetype.Face) :
-            raise TypeError("face must be a freetype.Face")
-        #end if
-        if blanks != None and not isinstance(blanks, Blanks) :
-            raise TypeError("blanks must be None or a Blanks")
-        #end if
-        if blanks != None :
-            c_blanks = blanks._fcobj
-        else :
-            c_blanks = None
-        #end if
-        result = fc.FcFreeTypeQueryFace(face._ftobj, filename.encode(), id, c_blanks)
-          # newly-created Pattern object
-        return \
-            Pattern(result)
-    #end freetype_query_face
-
-#end if
 
 class StrSet :
     "wrapper around FcStrSet objects. For internal use only: all relevant" \
