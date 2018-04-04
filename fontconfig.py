@@ -1601,6 +1601,8 @@ class Pattern :
 
     @classmethod
     def freetype_query(celf, filename, id, blanks) :
+        "constructs a pattern representing the font with index id in the font file" \
+        " with the given name. Also returns the count of fonts in the file."
         if blanks != None and not isinstance(blanks, Blanks) :
             raise TypeError("blanks must be None or a Blanks")
         #end if
@@ -1817,6 +1819,9 @@ class Pattern :
 if freetype != None :
 
     def freetype_query_face(face, filename, id, blanks) :
+        "constructs a pattern representing the given freetype2.Face. It is assumed" \
+        " to have been the font with index id loaded from the specified file name;" \
+        " this information is included in the pattern."
         if not isinstance(face, freetype.Face) :
             raise TypeError("face must be a freetype.Face")
         #end if
