@@ -370,7 +370,7 @@ class PROP(enum.Enum) :
                 PROP.WIDTH : int,
                 PROP.FILE : str,
                 PROP.INDEX : int,
-                PROP.FT_FACE : (lambda : None, lambda : freetype.face)[freetype != None](),
+                PROP.FT_FACE : (lambda : None, lambda : freetype.Face)[freetype != None](),
                 PROP.RASTERIZER : str, # (deprecated)
                 PROP.OUTLINE : bool,
                 PROP.SCALABLE : bool,
