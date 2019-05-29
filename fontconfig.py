@@ -380,7 +380,7 @@ class PROP(enum.Enum) :
                 PROP.MINSPACE : bool,
                 PROP.SOURCE : str, # (deprecated)
                 PROP.CHARSET : set,
-                PROP.LANG : str,
+                PROP.LANG : set,
                 PROP.FONTVERSION : int,
                 PROP.FULLNAME : str,
                 PROP.FAMILYLANG : str,
@@ -433,7 +433,7 @@ class PROP(enum.Enum) :
                 PROP.MINSPACE : FC.TypeBool,
                 PROP.SOURCE : FC.TypeString, # (deprecated)
                 PROP.CHARSET : FC.TypeCharSet,
-                PROP.LANG : FC.TypeString,
+                PROP.LANG : FC.TypeLangSet,
                 PROP.FONTVERSION : FC.TypeInteger,
                 PROP.FULLNAME : FC.TypeString,
                 PROP.FAMILYLANG : FC.TypeString,
@@ -1789,7 +1789,7 @@ class Pattern :
         c_arg = c_type()
         status = func(self._fcobj, name.value.encode(), id, ct.byref(c_arg))
         if status == FC.ResultTypeMismatch :
-            raise TypeError("value is not of expected type")
+            raise TypeError("value of prop %s[%d] is not of expected type %s" % (name, id, name.type))
         #end if
         if status == FC.ResultMatch :
             if extr != None :
