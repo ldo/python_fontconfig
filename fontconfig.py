@@ -1520,7 +1520,9 @@ class FontSet :
         f = ct.cast(self._fcobj, ct.POINTER(FC.FontSet))
         pats = ct.cast(f[0].fonts, ct.POINTER(ct.c_void_p))
         for i in range(f[0].nfont) :
-            yield Pattern(pats[i])
+            pat = pats[i]
+            fc.FcPatternReference(pat) # so it won’t disappear when the FontSet does
+            yield Pattern(pat)
         #end for
     #end each
 
