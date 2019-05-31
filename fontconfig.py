@@ -3,7 +3,7 @@ A ctypes-based binding for the Fontconfig API, for Python
 3.4 or later.
 """
 #+
-# Copyright 2016, 2018 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>.
+# Copyright 2016-2019 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>.
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -45,21 +45,23 @@ class FC :
     Char32 = ct.c_uint
     Bool = ct.c_int
 
+    DontCare = 2 # besides False and True
+
     # Current Fontconfig version number
     MAJOR = 2
-    MINOR = 11
+    MINOR = 13
     REVISION = 0
     VERSION = MAJOR * 10000 + MINOR * 100 + REVISION
 
     # Current font cache file format version
-    CACHE_VERSION = "4"
+    CACHE_VERSION = "7"
 
     # pattern items
     FAMILY = "family" # String
     STYLE = "style" # String
     SLANT = "slant" # Int
     WEIGHT = "weight" # Int
-    SIZE = "size" # Double
+    SIZE = "size" # Range (double)
     ASPECT = "aspect" # Double
     PIXEL_SIZE = "pixelsize" # Double
     SPACING = "spacing" # Int
@@ -78,13 +80,16 @@ class FC :
     RASTERIZER = "rasterizer" # String (deprecated)
     OUTLINE = "outline" # Bool
     SCALABLE = "scalable" # Bool
-    SCALE = "scale" # double
+    COLOR = "color" # Bool
+    VARIABLE = "variable" # Bool
+    SCALE = "scale" # double (deprecated)
+    SYMBOL = "symbol" # Bool
     DPI = "dpi" # double
     RGBA = "rgba" # Int
     MINSPACE = "minspace" # Bool use minimum line spacing
     SOURCE = "source" # String (deprecated)
     CHARSET = "charset" # CharSet
-    LANG = "lang" # String RFC 3066 langs
+    LANG = "lang" # LangSet RFC 3066 langs
     FONTVERSION = "fontversion" # Int from 'head' table
     FULLNAME = "fullname" # String
     FAMILYLANG = "familylang" # String RFC 3066 langs
@@ -97,9 +102,10 @@ class FC :
     DECORATIVE = "decorative" # Bool - true if style is a decorative variant
     LCD_FILTER = "lcdfilter" # Int
     FONT_FEATURES = "fontfeatures" # String
+    FONT_VARIATIONS = "fontvariations" # String
     NAMELANG = "namelang" # String RFC 3866 langs
     PRGNAME = "prgname" # String
-    HASH = "hash" # String
+    HASH = "hash" # String (deprecated)
     POSTSCRIPT_NAME = "postscriptname" # String
 
     CACHE_SUFFIX = ".cache-" + CACHE_VERSION
@@ -107,7 +113,8 @@ class FC :
     USER_CACHE_FILE = ".fonts.cache-" + CACHE_VERSION
 
     # Adjust outline rasterizer
-    CHAR_WIDTH = "charwidth" # Int
+    CHARWIDTH = "charwidth" # Int
+    CHAR_WIDTH = CHARWIDTH
     CHAR_HEIGHT = "charheight" # Int
     MATRIX = "matrix" # FcMatrix
 
@@ -180,7 +187,8 @@ class FC :
     TypeMatrix = 5
     TypeCharSet = 6
     TypeFTFace = 7
-    TypeLangSet = 8
+    TypeLangSet = 8,
+    TypeRange = 9
 
     class Matrix(ct.Structure) :
         _fields_ = \
@@ -208,6 +216,20 @@ class FC :
     ResultTypeMismatch = 2
     ResultNoId = 3
     ResultOutOfMemory = 4
+
+    # enum FcValueBinding
+    ValueBindingWeak = 0
+    ValueBindingStrong = 1
+    ValueBindingSame = 2
+    ValueBindingEnd = 0x7fffffff # to make sure size of type = 4
+
+    class PatternIter(ct.Structure) :
+        _fields_ = \
+            [
+                ("dummy1", ct.c_void_p),
+                ("dummy2", ct.c_void_p),
+            ]
+    #end PatternIter
 
     # NOTE: I cannot seem to make Fontconfig calls that take Value
     # objects without stack-smashing crashes. Seems there is something
@@ -270,6 +292,19 @@ class FC :
     # enum FcSetName
     SetSystem = 0
     SetApplication = 1
+
+    class FcConfigFileInfoIter(ct.Structure) :
+        _fields_ = \
+            [
+                ("dummy1", ct.c_void_p),
+                ("dummy2", ct.c_void_p),
+                ("dummy3", ct.c_void_p),
+            ]
+    #end FcConfigFileInfoIter
+
+    # enum FcEndian
+    EndianBig = 0
+    EndianLittle = 1
 
     CHARSET_MAP_SIZE = 256 // 32
     CHARSET_DONE = 0xFFFFFFFF
@@ -460,6 +495,8 @@ PROP.prop = dict((p.value, p) for p in PROP)
 # Routine arg/result types
 #-
 
+# from fontconfig.h:
+
 fc.FcBlanksCreate.restype = ct.c_void_p
 fc.FcBlanksCreate.argtypes = ()
 fc.FcBlanksDestroy.restype = None
@@ -522,6 +559,12 @@ fc.FcConfigGetSysRoot.restype = ct.c_void_p
 fc.FcConfigGetSysRoot.argtypes = (ct.c_void_p,)
 fc.FcConfigSetSysRoot.restype = None
 fc.FcConfigSetSysRoot.argtypes = (ct.c_void_p, ct.c_void_p)
+fc.FcConfigFileInfoIterInit.restype = None
+fc.FcConfigFileInfoIterInit.argtypes = (ct.c_void_p, ct.c_void_p)
+fc.FcConfigFileInfoIterNext.restype = FC.Bool
+fc.FcConfigFileInfoIterNext.argtypes = (ct.c_void_p, ct.c_void_p)
+fc.FcConfigFileInfoIterGet.restype = FC.Bool
+fc.FcConfigFileInfoIterGet.argtypes = (ct.c_void_p, ct.c_void_p, ct.POINTER(ct.c_char_p), ct.POINTER(ct.c_char_p), ct.POINTER(FC.Bool))
 
 fc.FcCharSetCreate.restype = ct.c_void_p
 fc.FcCharSetCreate.argtypes = ()
@@ -529,22 +572,48 @@ fc.FcCharSetDestroy.restype = None
 fc.FcCharSetDestroy.argtypes = (ct.c_void_p,)
 fc.FcCharSetAddChar.restype = FC.Bool
 fc.FcCharSetAddChar.argtypes = (ct.c_void_p, FC.Char32)
+fc.FcCharSetDelChar.restype = FC.Bool
+fc.FcCharSetDelChar.argtypes = (ct.c_void_p, FC.Char32)
+fc.FcCharSetCopy.restype = ct.c_void_p
+fc.FcCharSetCopy.argtypes = (ct.c_void_p,)
+fc.FcCharSetEqual.restype = FC.Bool
+fc.FcCharSetEqual.argtypes = (ct.c_void_p, ct.c_void_p)
+fc.FcCharSetIntersect.restype = ct.c_void_p
+fc.FcCharSetIntersect.argtypes = (ct.c_void_p, ct.c_void_p)
+fc.FcCharSetUnion.restype = ct.c_void_p
+fc.FcCharSetUnion.argtypes = (ct.c_void_p, ct.c_void_p)
+fc.FcCharSetSubtract.restype = ct.c_void_p
+fc.FcCharSetSubtract.argtypes = (ct.c_void_p, ct.c_void_p)
+fc.FcCharSetMerge.restype = FC.Bool
+fc.FcCharSetMerge.argtypes = (ct.c_void_p, ct.c_void_p, ct.POINTER(FC.Bool))
+fc.FcCharSetHasChar.restype = FC.Bool
+fc.FcCharSetHasChar.argtypes = (ct.c_void_p, FC.Char32)
 fc.FcCharSetCount.restype = FC.Char32
 fc.FcCharSetCount.argtypes = (ct.c_void_p,)
+fc.FcCharSetIntersectCount.restype = FC.Char32
+fc.FcCharSetIntersectCount.argtypes = (ct.c_void_p, ct.c_void_p)
+fc.FcCharSetSubtractCount.restype = FC.Char32
+fc.FcCharSetSubtractCount.argtypes = (ct.c_void_p, ct.c_void_p)
+fc.FcCharSetIsSubset.restype = FC.Bool
+fc.FcCharSetIsSubset.argtypes = (ct.c_void_p, ct.c_void_p)
 fc.FcCharSetFirstPage.restype = FC.Char32
 fc.FcCharSetFirstPage.argtypes = (ct.c_void_p, ct.POINTER(FC.charset_page), ct.POINTER(FC.Char32))
 fc.FcCharSetNextPage.restype = FC.Char32
 fc.FcCharSetNextPage.argtypes = (ct.c_void_p, ct.POINTER(FC.charset_page), ct.POINTER(FC.Char32))
+
+# TODO: print
 
 fc.FcGetDefaultLangs.restype = ct.c_void_p
 fc.FcGetDefaultLangs.argtypes = ()
 fc.FcDefaultSubstitute.restype = None
 fc.FcDefaultSubstitute.argtypes = (ct.c_void_p,)
 
-# TODO: print, file/dir
+# TODO: file/dir
 
 fc.FcFreeTypeQuery.restype = ct.c_void_p
 fc.FcFreeTypeQuery.argtypes = (ct.c_char_p, ct.c_int, ct.c_void_p, ct.POINTER(ct.c_int))
+fc.FcFreeTypeQueryAll.restype = ct.c_uint
+fc.FcFreeTypeQueryAll.argtypes = (ct.c_char_p, ct.c_uint, ct.c_void_p, ct.POINTER(ct.c_int), ct.c_void_p)
 
 fc.FcFontSetCreate.restype = ct.c_void_p
 fc.FcFontSetCreate.argtypes = ()
@@ -553,6 +622,10 @@ fc.FcFontSetDestroy.argtypes = (ct.c_void_p,)
 fc.FcFontSetAdd.restype = FC.Bool
 fc.FcFontSetAdd.argtypes = (ct.c_void_p, ct.c_void_p)
 
+fc.FcInitLoadConfig.restype = ct.c_void_p
+fc.FcInitLoadConfig.argtypes = ()
+fc.FcInitLoadConfigAndFonts.restype = ct.c_void_p
+fc.FcInitLoadConfigAndFonts.argtypes = ()
 fc.FcInit.restype = FC.Bool
 fc.FcInit.argtypes = ()
 fc.FcFini.restype = None
@@ -603,6 +676,7 @@ fc.FcObjectSetAdd.restype = FC.Bool
 fc.FcObjectSetAdd.argtypes = (ct.c_void_p, ct.c_char_p)
 fc.FcObjectSetDestroy.restype = None
 fc.FcObjectSetDestroy.argtypes = (ct.c_void_p,)
+# fc.FcObjectSetVaBuild, fc.FcObjectSetBuild -- can’t really use these
 fc.FcFontSetList.restype = ct.c_void_p
 fc.FcFontSetList.argtypes = (ct.c_void_p, ct.c_void_p, ct.c_int, ct.c_void_p, ct.c_void_p)
 fc.FcFontList.restype = ct.c_void_p
@@ -638,6 +712,8 @@ fc.FcPatternDuplicate.restype = ct.c_void_p
 fc.FcPatternDuplicate.argtypes = (ct.c_void_p,)
 fc.FcPatternReference.restype = ct.c_void_p
 fc.FcPatternReference.argtypes = (ct.c_void_p,)
+fc.FcPatternFilter.restype = ct.c_void_p
+fc.FcPatternFilter.argtypes = (ct.c_void_p, ct.c_void_p)
 # cannot correctly use calls that take FC.Value args (see note on class definition above for why)
 #fc.FcValueDestroy.restype = None
 #fc.FcValueDestroy.argtypes = (FC.Value,)
@@ -645,8 +721,8 @@ fc.FcPatternReference.argtypes = (ct.c_void_p,)
 #fc.FcValueSave.argtypes = (FC.Value,)
 fc.FcPatternDestroy.restype = None
 fc.FcPatternDestroy.argtypes = (ct.c_void_p,)
-fc.FcPatternFilter.restype = ct.c_void_p
-fc.FcPatternFilter.argtypes = (ct.c_void_p, ct.c_void_p)
+fc.FcPatternObjectCount.restype = ct.c_int
+fc.FcPatternObjectCount.argtypes = (ct.c_void_p,)
 fc.FcPatternEqual.restype = FC.Bool
 fc.FcPatternEqual.argtypes = (ct.c_void_p, ct.c_void_p)
 fc.FcPatternEqualSubset.restype = FC.Bool
@@ -659,6 +735,8 @@ fc.FcPatternHash.argtypes = (ct.c_void_p,)
 #fc.FcPatternAddWeak.argtypes = (ct.c_void_p, ct.c_char_p, FC.Value, FC.Bool)
 fc.FcPatternGet.restype = ct.c_uint
 fc.FcPatternGet.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, ct.POINTER(FC.Value))
+fc.FcPatternGetWithBinding.restype = ct.c_uint
+fc.FcPatternGetWithBinding.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, ct.POINTER(FC.Value), ct.POINTER(ct.c_uint))
 fc.FcPatternDel.restype = FC.Bool
 fc.FcPatternDel.argtypes = (ct.c_void_p, ct.c_char_p)
 fc.FcPatternRemove.restype = FC.Bool
@@ -678,6 +756,8 @@ fc.FcPatternAddBool.restype = FC.Bool
 fc.FcPatternAddBool.argtypes = (ct.c_void_p, ct.c_char_p, FC.Bool)
 fc.FcPatternAddLangSet.restype = FC.Bool
 fc.FcPatternAddLangSet.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_void_p)
+fc.FcPatternAddRange.restype = FC.Bool
+fc.FcPatternAddRange.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_void_p)
 fc.FcPatternGetInteger.restype = ct.c_uint
 fc.FcPatternGetInteger.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, ct.POINTER(ct.c_int))
 fc.FcPatternGetDouble.restype = ct.c_uint
@@ -692,9 +772,48 @@ fc.FcPatternGetBool.restype = ct.c_uint
 fc.FcPatternGetBool.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, ct.POINTER(FC.Bool))
 fc.FcPatternGetLangSet.restype = ct.c_uint
 fc.FcPatternGetLangSet.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, ct.POINTER(ct.c_void_p))
+fc.FcPatternGetRange.restype = ct.c_uint
+fc.FcPatternGetRange.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, ct.POINTER(ct.c_void_p))
 # not bothering with Build methods
 fc.FcPatternFormat.restype = ct.c_void_p
 fc.FcPatternFormat.argtypes = (ct.c_void_p, ct.c_char_p)
+
+fc.FcRangeCreateDouble.restype = ct.c_void_p
+fc.FcRangeCreateDouble.argtypes = (ct.c_double, ct.c_double)
+fc.FcRangeCreateInteger.restype = ct.c_void_p
+fc.FcRangeCreateInteger.argtypes = (FC.Char32, FC.Char32)
+fc.FcRangeDestroy.restype = None
+fc.FcRangeDestroy.argtypes = (ct.c_void_p,)
+fc.FcRangeCopy.restype = ct.c_void_p
+fc.FcRangeCopy.argtypes = (ct.c_void_p,)
+fc.FcRangeGetDouble.restype = FC.Bool
+fc.FcRangeGetDouble.argtypes = (ct.c_void_p, ct.POINTER(ct.c_double), ct.POINTER(ct.c_double))
+
+fc.FcPatternIterStart.restype = None
+fc.FcPatternIterStart.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter))
+fc.FcPatternIterNext.restype = FC.Bool
+fc.FcPatternIterNext.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter))
+fc.FcPatternIterEqual.restype = FC.Bool
+fc.FcPatternIterEqual.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter), ct.c_void_p, ct.POINTER(FC.PatternIter))
+fc.FcPatternFindIter.restype = FC.Bool
+fc.FcPatternFindIter.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter), ct.c_char_p)
+fc.FcPatternIterIsValid.restype = FC.Bool
+fc.FcPatternIterIsValid.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter))
+fc.FcPatternIterGetObject.restype = ct.c_char_p
+fc.FcPatternIterGetObject.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter))
+fc.FcPatternIterValueCount.restype = ct.c_int
+fc.FcPatternIterValueCount.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter))
+fc.FcPatternIterGetValue.restype = ct.c_uint
+fc.FcPatternIterGetValue.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter), ct.c_int, ct.POINTER(FC.Value), ct.POINTER(ct.c_uint))
+
+fc.FcWeightFromOpenType.restype = ct.c_int
+fc.FcWeightFromOpenType.argtypes = (ct.c_int,)
+fc.FcWeightFromOpenTypeDouble.restype = ct.c_double
+fc.FcWeightFromOpenTypeDouble.argtypes = (ct.c_double,)
+fc.FcWeightToOpenType.restype = ct.c_int
+fc.FcWeightToOpenType.argtypes = (ct.c_int,)
+fc.FcWeightToOpenTypeDouble.restype = ct.c_double
+fc.FcWeightToOpenTypeDouble.argtypes = (ct.c_double,)
 
 fc.FcStrCopy.restype = ct.c_char_p
 fc.FcStrCopy.argtypes = (ct.c_void_p,)
@@ -707,10 +826,16 @@ fc.FcStrCopyFilename.argtypes = (ct.c_char_p,)
 
 fc.FcStrSetCreate.restype = ct.c_void_p
 fc.FcStrSetCreate.argtypes = ()
+fc.FcStrSetMember.restype = FC.Bool
+fc.FcStrSetMember.argtypes = (ct.c_void_p, ct.c_char_p)
+fc.FcStrSetEqual.restype = FC.Bool
+fc.FcStrSetEqual.argtypes = (ct.c_void_p, ct.c_void_p)
 fc.FcStrSetAdd.restype = FC.Bool
 fc.FcStrSetAdd.argtypes = (ct.c_void_p, ct.c_char_p)
 # can’t (easily) use FcStrSetAddFilename, caller just has to use
 # copy_filename (below) and add result to Python set of strings
+fc.FcStrSetDel.restype = FC.Bool
+fc.FcStrSetDel.argtypes = (ct.c_void_p, ct.c_char_p)
 fc.FcStrSetDestroy.restype = None
 fc.FcStrSetDestroy.argtypes = (ct.c_void_p,)
 fc.FcStrListCreate.restype = ct.c_void_p
@@ -727,6 +852,12 @@ fc.FcConfigParseAndLoad.argtypes = (ct.c_void_p, ct.c_char_p, FC.Bool)
 
 # from fcfreetype.h
 
+fc.FcFreeTypeCharIndex.restype = ct.c_uint
+fc.FcFreeTypeCharIndex.argtypes = (ct.c_void_p, FC.Char32)
+fc.FcFreeTypeCharSetAndSpacing.restype = ct.c_void_p
+fc.FcFreeTypeCharSetAndSpacing.argtypes = (ct.c_void_p, ct.c_void_p, ct.POINTER(ct.c_int))
+fc.FcFreeTypeCharSet.restype = ct.c_void_p
+fc.FcFreeTypeCharSet = (ct.c_void_p, ct.c_void_p)
 fc.FcPatternGetFTFace.restype = ct.c_uint
 fc.FcPatternGetFTFace.argtypes = (ct.c_void_p, ct.c_char_p, ct.c_int, ct.POINTER(ct.c_void_p))
 fc.FcPatternAddFTFace.restype = FC.Bool
@@ -792,6 +923,8 @@ def lang_normalize(langname) :
     return \
         result
 #end lang_normalize
+
+# TODO: Weight calls
 
 class LangSet :
     "wrapper for FcLangSet objects. Do not instantiate directly: use the create, copy," \
@@ -961,6 +1094,8 @@ class ObjectSet :
     #end from_fc
 
 #end ObjectSet
+
+# TODO: Range wrapper class
 
 class Blanks :
     "wrapper for FcBlanks objects, which represent a set of character codes which" \
@@ -1213,6 +1348,8 @@ class Config :
         # note: trying to pass NULL second arg to FcConfigSetSysRoot will segfault!
         fc.FcConfigSetSysRoot(self._fcobj, newroot.encode())
     #end sysroot
+
+    # TODO: ConfigFileInfoIter stuff
 
     def font_set_list(self, sets, pat, props) :
         if not isinstance(pat, Pattern) :
@@ -1840,6 +1977,8 @@ class Pattern :
             #end while
         #end for
     #end each_prop
+
+    # TODO: PatternIter stuff
 
 #end Pattern
 
