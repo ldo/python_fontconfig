@@ -61,7 +61,7 @@ class FC :
     STYLE = "style" # String
     SLANT = "slant" # Int
     WEIGHT = "weight" # Int
-    SIZE = "size" # Range (double)
+    SIZE = "size" # Double
     ASPECT = "aspect" # Double
     PIXEL_SIZE = "pixelsize" # Double
     SPACING = "spacing" # Int
