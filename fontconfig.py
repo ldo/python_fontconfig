@@ -924,7 +924,29 @@ def lang_normalize(langname) :
         result
 #end lang_normalize
 
-# TODO: Weight calls
+def weight_from_opentype(ot_weight) :
+    if isinstance(ot_weight, int) :
+        result = fc.FcWeightFromOpenType(ot_weight)
+    elif isinstance(ot_weight, float) :
+        result = fc.FcWeightFromOpenTypeDouble(ot_weight)
+    else :
+        raise TypeError("weight must be int or float")
+    #end if
+    return \
+        result
+#end weight_from_opentype
+
+def weight_to_opentype(fc_weight) :
+    if isinstance(fc_weight, int) :
+        result = fc.FcWeightToOpenType(fc_weight)
+    elif isinstance(fc_weight, float) :
+        result = fc.FcWeightToOpenTypeDouble(fc_weight)
+    else :
+        raise TypeError("weight must be int or float")
+    #end if
+    return \
+        result
+#end weight_to_opentype
 
 class LangSet :
     "wrapper for FcLangSet objects. Do not instantiate directly: use the create, copy," \
