@@ -1997,6 +1997,7 @@ class Pattern :
                 set : (fc.FcPatternAddCharSet, lambda c : CharSet.to_fc(c), lambda c : c._fcobj, False),
                 bool : (fc.FcPatternAddBool, lambda b : FC.Bool(b), None, False),
                 LangSet : (fc.FcPatternAddLangSet, None, lambda l : l._fcobj, False),
+                Range : (fc.FcPatternAddRange, None, lambda r : r._fcobj, False),
             }
         if freetype != None :
             convs[freetype.Face] = (fc.FcPatternAddFTFace, None, lambda f : f._ftobj, False)
