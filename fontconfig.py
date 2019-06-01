@@ -293,14 +293,14 @@ class FC :
     SetSystem = 0
     SetApplication = 1
 
-    class FcConfigFileInfoIter(ct.Structure) :
+    class ConfigFileInfoIter(ct.Structure) :
         _fields_ = \
             [
                 ("dummy1", ct.c_void_p),
                 ("dummy2", ct.c_void_p),
                 ("dummy3", ct.c_void_p),
             ]
-    #end FcConfigFileInfoIter
+    #end ConfigFileInfoIter
 
     # enum FcEndian
     EndianBig = 0
@@ -1371,7 +1371,40 @@ class Config :
         fc.FcConfigSetSysRoot(self._fcobj, newroot.encode())
     #end sysroot
 
-    # TODO: ConfigFileInfoIter stuff
+    def iter_info(self) :
+        "iterates over the configuration file information."
+        iter = FC.ConfigFileInfoIter()
+        c_name = ct.POINTER(ct.c_char_p)(ct.cast(None, ct.c_char_p))
+        c_description = ct.POINTER(ct.c_char_p)(ct.cast(None, ct.c_char_p))
+        c_enabled = FC.Bool()
+        fc.FcConfigFileInfoIterInit(self._fcobj, ct.byref(iter))
+        while True :
+            if fc.FcConfigFileInfoIterGet \
+                  (
+                    self._fcobj,
+                    ct.byref(iter),
+                    c_name,
+                    c_description,
+                    c_enabled
+                  ) \
+            :
+                yield \
+                    {
+                        "name" :
+                            (lambda : None, lambda : c_name.contents.value.decode())
+                            [c_name.contents != None](),
+                        "description" :
+                            (lambda : None, lambda : c_description.contents.value.decode())
+                            [c_description.contents != None](),
+                        "enabled" : bool(c_enabled.value),
+                    }
+            else :
+                pass # happens after last successful call to FcConfigFileInfoIterNext!?
+            #end if
+            if not fc.FcConfigFileInfoIterNext(self._fcobj, ct.byref(iter)) :
+                break
+        #end while
+    #end iter_info
 
     def font_set_list(self, sets, pat, props) :
         if not isinstance(pat, Pattern) :
