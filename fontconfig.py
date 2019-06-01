@@ -2125,7 +2125,37 @@ class Pattern :
         #end for
     #end each_prop
 
-    # TODO: PatternIter stuff
+    @property
+    def each_object_with_values(self) :
+        iter = FC.PatternIter()
+        c_value = FC.Value()
+        c_binding = ct.c_uint()
+        fc.FcPatternIterStart(self._fcobj, ct.byref(iter))
+        while True :
+            name = fc.FcPatternIterGetObject(self._fcobj, ct.byref(iter))
+            if name == None :
+                break
+            nr_values = fc.FcPatternIterValueCount(self._fcobj, ct.byref(iter))
+            values = []
+            for i in range(nr_values) :
+                result = fc.FcPatternIterGetValue \
+                  (
+                    self._fcobj,
+                    ct.byref(iter),
+                    i,
+                    ct.byref(c_value),
+                    ct.byref(c_binding)
+                  )
+                if result != 0 :
+                    raise RuntimeError("FcPatternIterGetValue returned %d" % result)
+                #end if
+                values.append({"value" : decode_value(c_value), "binding" : c_binding.value})
+            #end for
+            yield {"name" : name, "values" : values}
+            if not fc.FcPatternIterNext(self._fcobj, ct.byref(iter)) :
+                break
+        #end while
+    #end each_object_with_values
 
 #end Pattern
 
