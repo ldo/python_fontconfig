@@ -1464,8 +1464,7 @@ class Config :
         fc.FcConfigSetSysRoot(self._fcobj, newroot.encode())
     #end sysroot
 
-    @property
-    def each_info(self) :
+    def iter_info(self) :
         "iterates over the configuration file information."
         iter = FC.ConfigFileInfoIter()
         c_name = ct.POINTER(ct.c_char_p)(ct.cast(None, ct.c_char_p))
@@ -1498,7 +1497,7 @@ class Config :
             if not fc.FcConfigFileInfoIterNext(self._fcobj, ct.byref(iter)) :
                 break
         #end while
-    #end each_info
+    #end iter_info
 
     def font_set_list(self, sets, pat, props) :
         if not isinstance(pat, Pattern) :
@@ -2122,8 +2121,7 @@ class Pattern :
             result
     #end format
 
-    @property
-    def each_prop(self) :
+    def iter_props(self) :
         "iterates over each property name, index and corresponding value."
         for prop in PROP :
             id = 0
@@ -2135,10 +2133,9 @@ class Pattern :
                 id += 1
             #end while
         #end for
-    #end each_prop
+    #end iter_props
 
-    @property
-    def each_object_with_values(self) :
+    def iter_object_with_values(self) :
         iter = FC.PatternIter()
         c_value = FC.Value()
         c_binding = ct.c_uint()
@@ -2167,7 +2164,7 @@ class Pattern :
             if not fc.FcPatternIterNext(self._fcobj, ct.byref(iter)) :
                 break
         #end while
-    #end each_object_with_values
+    #end iter_object_with_values
 
 #end Pattern
 
