@@ -1830,6 +1830,15 @@ class Matrix :
             FC.Matrix(xx = m.xx, xy = m.xy, yx = m.yx, yy = m.yy)
     #end to_fc
 
+    def __repr__(self) :
+        return \
+            (
+                "%s(xx = %.3g, xy = %.3g, yx = %.3g, yy = %.3g)"
+            %
+                (type(self).__name__, self.xx, self.xy, self.yx, self.yy)
+            )
+    #end __repr__
+
 #end Matrix
 
 class Pattern :
