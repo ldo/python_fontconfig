@@ -1371,7 +1371,8 @@ class Config :
         fc.FcConfigSetSysRoot(self._fcobj, newroot.encode())
     #end sysroot
 
-    def iter_info(self) :
+    @property
+    def each_info(self) :
         "iterates over the configuration file information."
         iter = FC.ConfigFileInfoIter()
         c_name = ct.POINTER(ct.c_char_p)(ct.cast(None, ct.c_char_p))
@@ -1404,7 +1405,7 @@ class Config :
             if not fc.FcConfigFileInfoIterNext(self._fcobj, ct.byref(iter)) :
                 break
         #end while
-    #end iter_info
+    #end each_info
 
     def font_set_list(self, sets, pat, props) :
         if not isinstance(pat, Pattern) :
