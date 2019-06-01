@@ -187,7 +187,7 @@ class FC :
     TypeMatrix = 5
     TypeCharSet = 6
     TypeFTFace = 7
-    TypeLangSet = 8,
+    TypeLangSet = 8
     TypeRange = 9
 
     class Matrix(ct.Structure) :
