@@ -1119,33 +1119,28 @@ class ObjectSet :
 #end ObjectSet
 
 class Range :
-    "wrapper for FcRange objects, which store a pair of double values."
+    "wrapper for FcRange objects, which store a pair of double values." \
+    " Do not instantiate directly; use the create method."
 
     __slots__ = \
         ( # to forestall typos
             "_fcobj",
-            "__weakref__",
+            "_created",
         )
 
-    _instances = WeakValueDictionary()
-
-    def __new__(celf, _fcobj) :
-        self = celf._instances.get(_fcobj)
-        if self == None :
-            self = super().__new__(celf)
-            self._fcobj = _fcobj
-            celf._instances[_fcobj] = self
-        else :
-            fc.FcRangeDestroy(self._fcobj)
-              # lose extra reference created by caller
+    def __init__(self, _fcobj, created) :
+        if isinstance(_fcobj, ct.c_void_p) :
+            _fcobj = _fcobj.value
         #end if
-        return \
-            self
-    #end __new__
+        self._fcobj = _fcobj
+        self._created = created
+    #end __init__
 
     def __del__(self) :
         if fc != None and self._fcobj != None :
-            fc.FcRangeDestroy(self._fcobj)
+            if self._created :
+                fc.FcRangeDestroy(self._fcobj)
+            #end if
             self._fcobj = None
         #end if
     #end __del__
@@ -1155,12 +1150,12 @@ class Range :
         # no point providing a version that calls FcRangeCreateInteger,
         # since values are stored internally as doubles anyway.
         return \
-            celf(fc.FcRangeCreateDouble(begin, end))
+            celf(fc.FcRangeCreateDouble(begin, end), True)
     #end create
 
     def copy(self) :
         return \
-            type(self)(fc.FcRangeCopy(self._fcobj))
+            type(self)(fc.FcRangeCopy(self._fcobj), True)
     #end copy
 
     @property
@@ -1168,7 +1163,7 @@ class Range :
         begin = ct.c_double()
         end = ct.c_double()
         if not fc.FcRangeGetDouble(self._fcobj, ct.byref(begin), ct.byref(end)) :
-            raise RuntimeError("FcRangeGetDouble failure")
+            raise CallFailed("FcRangeGetDouble")
         #end if
         return \
             begin.value, end.value
