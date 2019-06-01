@@ -968,7 +968,7 @@ def decode_value(value) :
     decoders = \
         {
             # TypeUnknown?
-            # TypeVoid?
+            # TypeVoid handled specially below
             FC.TypeInteger : ("i", lambda x : x),
             FC.TypeDouble : ("d", lambda x : x),
             FC.TypeString : ("s", lambda s : s.decode()),
@@ -982,12 +982,17 @@ def decode_value(value) :
     if freetype != None :
         decoders[FC.TypeFTFace] = ("f", lambda f : freetype.Face(None, f, None))
     #end if
-    decoder = decoders.get(value.type)
-    if decoder == None :
-        raise ValueError("unrecognized value type code %d" % value.type)
+    if value.type == FC.TypeVoid :
+        result = None
+    else :
+        decoder = decoders.get(value.type)
+        if decoder == None :
+            raise ValueError("unrecognized value type code %d" % value.type)
+        #end if
+        result = decoder[1](getattr(value.u, decoder[0]))
     #end if
     return \
-        decoder[1](getattr(value.u, decoder[0]))
+        result
 #end decode_value
 
 class LangSet :
@@ -2082,20 +2087,30 @@ class Pattern :
 
     #begin get
         name = PROP.ensure_prop(name)
-        func, c_type, extr = convs[name.fc_type]
-        c_arg = c_type()
-        status = func(self._fcobj, name.value.encode(), id, ct.byref(c_arg))
-        if status == FC.ResultTypeMismatch :
-            raise TypeError("value of prop %s[%d] is not of expected type %s" % (name, id, name.type))
-        #end if
-        if status == FC.ResultMatch :
-            if extr != None :
-                result = extr(c_arg)
-            else :
-                result = c_arg.value
+        if name == PROP.LANG :
+            # special-case this because I keep getting inconsistent results
+            c_arg = FC.Value()
+            status = fc.FcPatternGet(self._fcobj, name.value.encode(), id, ct.byref(c_arg))
+            if status not in (FC.ResultMatch, FC.ResultNoMatch, FC.ResultNoId) :
+                raise RuntimeError("FcPatternGet returned %d" % status)
             #end if
+            result = decode_value(c_arg)
         else :
-            result = None
+            func, c_type, extr = convs[name.fc_type]
+            c_arg = c_type()
+            status = func(self._fcobj, name.value.encode(), id, ct.byref(c_arg))
+            if status == FC.ResultTypeMismatch :
+                raise TypeError("value of prop %s[%d] is not of expected type %s" % (name, id, name.type))
+            #end if
+            if status == FC.ResultMatch :
+                if extr != None :
+                    result = extr(c_arg)
+                else :
+                    result = c_arg.value
+                #end if
+            else :
+                result = None
+            #end if
         #end if
         return \
             (result, status)
