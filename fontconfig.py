@@ -257,7 +257,7 @@ class FC :
             ("type", ct.c_uint), # Type
             ("u", ValUnion),
         ]
-    del ValUnion
+    ValUnion
 
     class FontSet(ct.Structure) :
         _fields_ = \
@@ -948,6 +948,35 @@ def weight_to_opentype(fc_weight) :
     return \
         result
 #end weight_to_opentype
+
+def decode_value(value) :
+    if not isinstance(value, FC.Value) :
+        raise TypeError("value must be an FC.Value")
+    #end if
+    decoders = \
+        {
+            # TypeUnknown?
+            # TypeVoid?
+            FC.TypeInteger : ("i", lambda x : x),
+            FC.TypeDouble : ("d", lambda x : x),
+            FC.TypeString : ("s", lambda s : s.decode()),
+            FC.TypeBool : ("b", lambda b : bool(b)),
+            FC.TypeMatrix : ("m", lambda m : Matrix.from_fc(m.contents)),
+            FC.TypeCharSet : ("c", lambda s : CharSet(s, False).from_fc()),
+            # FC.TypeFTFace inserted below
+            FC.TypeLangSet : ("l", lambda s : LangSet(s, False).langs),
+            FC.TypeRange : ("r", lambda r : Range(r, False).limits),
+        }
+    if freetype != None :
+        decoders[FC.TypeFTFace] = ("f", lambda f : freetype.Face(None, f, None))
+    #end if
+    decoder = decoders.get(value.type)
+    if decoder == None :
+        raise ValueError("unrecognized value type code %d" % value.type)
+    #end if
+    return \
+        decoder[1](getattr(value.u, decoder[0]))
+#end decode_value
 
 class LangSet :
     "wrapper for FcLangSet objects. Do not instantiate directly: use the create, copy," \
