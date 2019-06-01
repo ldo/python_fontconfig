@@ -339,7 +339,10 @@ class PROP(enum.Enum) :
     RASTERIZER = "rasterizer" # String (deprecated)
     OUTLINE = "outline" # Bool
     SCALABLE = "scalable" # Bool
+    COLOR = "color" # Bool
+    VARIABLE = "variable" # Bool
     SCALE = "scale" # double
+    SYMBOL = "symbol" # Bool
     DPI = "dpi" # double
     RGBA = "rgba" # Int
     MINSPACE = "minspace" # Bool use minimum line spacing
@@ -358,6 +361,7 @@ class PROP(enum.Enum) :
     DECORATIVE = "decorative" # Bool - true if style is a decorative variant
     LCD_FILTER = "lcdfilter" # Int
     FONT_FEATURES = "fontfeatures" # String
+    FONT_VARIATIONS = "fontvariations" # String
     NAMELANG = "namelang" # String RFC 3866 langs
     PRGNAME = "prgname" # String
     HASH = "hash" # String
@@ -410,7 +414,10 @@ class PROP(enum.Enum) :
                 PROP.RASTERIZER : str, # (deprecated)
                 PROP.OUTLINE : bool,
                 PROP.SCALABLE : bool,
+                PROP.COLOR : bool,
+                PROP.VARIABLE : bool,
                 PROP.SCALE : float,
+                PROP.SYMBOL : bool,
                 PROP.DPI : float,
                 PROP.RGBA : int,
                 PROP.MINSPACE : bool,
@@ -429,6 +436,7 @@ class PROP(enum.Enum) :
                 PROP.DECORATIVE : bool,
                 PROP.LCD_FILTER : int,
                 PROP.FONT_FEATURES : str,
+                PROP.FONT_VARIATIONS : str,
                 PROP.NAMELANG : str,
                 PROP.PRGNAME : str,
                 PROP.HASH : str,
@@ -463,7 +471,10 @@ class PROP(enum.Enum) :
                 PROP.RASTERIZER : FC.TypeString, # (deprecated)
                 PROP.OUTLINE : FC.TypeBool,
                 PROP.SCALABLE : FC.TypeBool,
+                PROP.COLOR : FC.TypeBool,
+                PROP.VARIABLE : FC.TypeBool,
                 PROP.SCALE : FC.TypeDouble,
+                PROP.SYMBOL : FC.TypeBool,
                 PROP.DPI : FC.TypeDouble,
                 PROP.RGBA : FC.TypeInteger,
                 PROP.MINSPACE : FC.TypeBool,
@@ -482,6 +493,7 @@ class PROP(enum.Enum) :
                 PROP.DECORATIVE : FC.TypeBool,
                 PROP.LCD_FILTER : FC.TypeInteger,
                 PROP.FONT_FEATURES : FC.TypeString,
+                PROP.FONT_VARIATIONS : FC.TypeString,
                 PROP.NAMELANG : FC.TypeString,
                 PROP.PRGNAME : FC.TypeString,
                 PROP.HASH : FC.TypeString,
