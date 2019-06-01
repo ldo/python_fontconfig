@@ -2151,7 +2151,7 @@ class Pattern :
                 #end if
                 values.append({"value" : decode_value(c_value), "binding" : c_binding.value})
             #end for
-            yield {"name" : name, "values" : values}
+            yield {"name" : name.decode(), "values" : values}
             if not fc.FcPatternIterNext(self._fcobj, ct.byref(iter)) :
                 break
         #end while
