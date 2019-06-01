@@ -31,7 +31,7 @@ class my_build(std_build) :
 distutils.core.setup \
   (
     name = "Fontconfig",
-    version = "0.5",
+    version = "0.6",
     description =
         "language bindings for the Fontconfig font-matching library, for Python 3.4 or later",
     author = "Lawrence D'Oliveiro",
