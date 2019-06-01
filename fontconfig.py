@@ -250,6 +250,7 @@ class FC :
             ("c", ct.c_void_p), # ct.POINTER(CharSet)
             ("f", ct.c_void_p), # ct.POINTER(FT_Face)
             ("l", ct.c_void_p), # ct.POINTER(LangSet)
+            ("r", ct.c_void_p), # ct.POINTER(Range)
         ]
     Value._fields_ = \
         [
@@ -1117,7 +1118,63 @@ class ObjectSet :
 
 #end ObjectSet
 
-# TODO: Range wrapper class
+class Range :
+    "wrapper for FcRange objects, which store a pair of double values."
+
+    __slots__ = \
+        ( # to forestall typos
+            "_fcobj",
+            "__weakref__",
+        )
+
+    _instances = WeakValueDictionary()
+
+    def __new__(celf, _fcobj) :
+        self = celf._instances.get(_fcobj)
+        if self == None :
+            self = super().__new__(celf)
+            self._fcobj = _fcobj
+            celf._instances[_fcobj] = self
+        else :
+            fc.FcRangeDestroy(self._fcobj)
+              # lose extra reference created by caller
+        #end if
+        return \
+            self
+    #end __new__
+
+    def __del__(self) :
+        if fc != None and self._fcobj != None :
+            fc.FcRangeDestroy(self._fcobj)
+            self._fcobj = None
+        #end if
+    #end __del__
+
+    @classmethod
+    def create(celf, begin, end) :
+        # no point providing a version that calls FcRangeCreateInteger,
+        # since values are stored internally as doubles anyway.
+        return \
+            celf(fc.FcRangeCreateDouble(begin, end))
+    #end create
+
+    def copy(self) :
+        return \
+            type(self)(fc.FcRangeCopy(self._fcobj))
+    #end copy
+
+    @property
+    def limits(self) :
+        begin = ct.c_double()
+        end = ct.c_double()
+        if not fc.FcRangeGetDouble(self._fcobj, ct.byref(begin), ct.byref(end)) :
+            raise RuntimeError("FcRangeGetDouble failure")
+        #end if
+        return \
+            begin.value, end.value
+    #end limits
+
+#end Range
 
 class Blanks :
     "wrapper for FcBlanks objects, which represent a set of character codes which" \
