@@ -2068,50 +2068,13 @@ class Pattern :
     #end build
 
     def get(self, name, id) :
-
-        convs = \
-            {
-                FC.TypeInteger : (fc.FcPatternGetInteger, ct.c_int, None),
-                FC.TypeDouble : (fc.FcPatternGetDouble, ct.c_double, None),
-                FC.TypeString : (fc.FcPatternGetString, ct.c_void_p, lambda p : ct.cast(p, ct.c_char_p).value.decode()),
-                FC.TypeMatrix : (fc.FcPatternGetMatrix, FC.Matrix, lambda v : Matrix.from_fc(v.m.contents)),
-                FC.TypeCharSet : (fc.FcPatternGetCharSet, ct.c_void_p, lambda c : CharSet(c, False).from_fc()),
-                FC.TypeBool : (fc.FcPatternGetBool, FC.Bool, lambda b : b != 0),
-                FC.TypeFTFace : (fc.FcPatternGetFTFace, ct.c_void_p, lambda p : p.value), # return void pointer if python_freetype is not available
-                FC.TypeLangSet : (fc.FcPatternGetLangSet, ct.c_void_p, lambda l : LangSet(l, False).langs),
-            }
-        if freetype != None :
-            convs[FC.TypeFTFace] = \
-                (fc.FcPatternGetFTFace, ct.c_void_p, lambda p : freetype.Face(None, p.value, None))
-        #end if
-
-    #begin get
         name = PROP.ensure_prop(name)
-        if name == PROP.LANG :
-            # special-case this because I keep getting inconsistent results
-            c_arg = FC.Value()
-            status = fc.FcPatternGet(self._fcobj, name.value.encode(), id, ct.byref(c_arg))
-            if status not in (FC.ResultMatch, FC.ResultNoMatch, FC.ResultNoId) :
-                raise RuntimeError("FcPatternGet returned %d" % status)
-            #end if
-            result = decode_value(c_arg)
-        else :
-            func, c_type, extr = convs[name.fc_type]
-            c_arg = c_type()
-            status = func(self._fcobj, name.value.encode(), id, ct.byref(c_arg))
-            if status == FC.ResultTypeMismatch :
-                raise TypeError("value of prop %s[%d] is not of expected type %s" % (name, id, name.type))
-            #end if
-            if status == FC.ResultMatch :
-                if extr != None :
-                    result = extr(c_arg)
-                else :
-                    result = c_arg.value
-                #end if
-            else :
-                result = None
-            #end if
+        c_arg = FC.Value()
+        status = fc.FcPatternGet(self._fcobj, name.value.encode(), id, ct.byref(c_arg))
+        if status not in (FC.ResultMatch, FC.ResultNoMatch, FC.ResultNoId) :
+            raise RuntimeError("FcPatternGet returned %d" % status)
         #end if
+        result = decode_value(c_arg)
         return \
             (result, status)
     #end get
