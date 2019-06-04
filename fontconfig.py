@@ -1166,7 +1166,10 @@ class ObjectSet :
 
 class Range :
     "wrapper for FcRange objects, which store a pair of double values." \
-    " Do not instantiate directly; use the create method."
+    " Do not instantiate directly; use the create method. Actually, probably" \
+    " best not to use this type at all. Properties of TypeRange will be returned" \
+    " as (low, high) tuples, and addition of such properties to a Pattern expects" \
+    " them to be supplied in the same form."
 
     __slots__ = \
         ( # to forestall typos
@@ -2013,7 +2016,7 @@ class Pattern :
                 set : (fc.FcPatternAddCharSet, lambda c : CharSet.to_fc(c), lambda c : c._fcobj, False),
                 bool : (fc.FcPatternAddBool, lambda b : FC.Bool(b), None, False),
                 LangSet : (fc.FcPatternAddLangSet, None, lambda l : l._fcobj, False),
-                Range : (fc.FcPatternAddRange, None, lambda r : r._fcobj, False),
+                tuple : (fc.FcPatternAddRange, lambda r : Range.create(*r), lambda r : r._fcobj, False),
             }
         if freetype != None :
             convs[freetype.Face] = (fc.FcPatternAddFTFace, None, lambda f : f._ftobj, False)
