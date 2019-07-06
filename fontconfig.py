@@ -25,6 +25,7 @@ import enum
 import ctypes as ct
 from weakref import \
     WeakValueDictionary
+import atexit
 try :
     import freetype2 as freetype
 except ImportError :
@@ -2234,3 +2235,16 @@ class StrList :
     #end from_fc
 
 #end StrList
+
+#+
+# Overall
+#-
+
+def _atexit() :
+    # disable all __del__ methods at process termination to avoid segfaults
+    for cls in Blanks, CharSet, Config, FontSet, LangSet, ObjectSet, Pattern, Range, StrList, StrSet :
+        delattr(cls, "__del__")
+    #end for
+#end _atexit
+atexit.register(_atexit)
+del _atexit
