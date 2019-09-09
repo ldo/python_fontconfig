@@ -174,7 +174,7 @@ To retrieve information from the pattern, you can use its `get`
 method. For example, to get the full font file pathname so you can
 actually load the font:
 
-    filename = found.get(fc.PROP.FILE)
+    filename = found.get(fc.PROP.FILE, 0)[0]
 
 Or, you can print out the full contents of the `Pattern` as a string
 by
@@ -257,4 +257,4 @@ missing from the font’s character set:
     #end for
 
 Lawrence D'Oliveiro <ldo@geek-central.gen.nz>
-2017 April 13
+2019 September 10
