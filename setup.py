@@ -36,7 +36,7 @@ distutils.core.setup \
         "language bindings for the Fontconfig font-matching library, for Python 3.4 or later",
     author = "Lawrence D'Oliveiro",
     author_email = "ldo@geek-central.gen.nz",
-    url = "http://github.com/ldo/python_fontconfig",
+    url = "https://github.com/ldo/python_fontconfig",
     py_modules = ["fontconfig"],
     cmdclass =
         {
