@@ -1863,7 +1863,7 @@ class Matrix :
 
 class Pattern :
     "wrapper around FcPattern objects. Do not instantiate directly; use create" \
-    " method."
+    " or name_parse methods."
 
     __slots__ = \
         ( # to forestall typos
