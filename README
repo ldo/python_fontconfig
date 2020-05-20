@@ -256,5 +256,9 @@ missing from the font’s character set:
           )
     #end for
 
+For some example scripts, see my python_fontconfig_examples repository
+([GitLab](https://gitlab.com/ldo/python_fontconfig_examples),
+[GitHub](https://github.com/ldo/python_fontconfig_examples)).
+
 Lawrence D'Oliveiro <ldo@geek-central.gen.nz>
-2019 September 10
+2020 May 20
