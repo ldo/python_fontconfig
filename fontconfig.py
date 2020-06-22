@@ -573,12 +573,14 @@ fc.FcConfigGetSysRoot.restype = ct.c_void_p
 fc.FcConfigGetSysRoot.argtypes = (ct.c_void_p,)
 fc.FcConfigSetSysRoot.restype = None
 fc.FcConfigSetSysRoot.argtypes = (ct.c_void_p, ct.c_void_p)
-fc.FcConfigFileInfoIterInit.restype = None
-fc.FcConfigFileInfoIterInit.argtypes = (ct.c_void_p, ct.c_void_p)
-fc.FcConfigFileInfoIterNext.restype = FC.Bool
-fc.FcConfigFileInfoIterNext.argtypes = (ct.c_void_p, ct.c_void_p)
-fc.FcConfigFileInfoIterGet.restype = FC.Bool
-fc.FcConfigFileInfoIterGet.argtypes = (ct.c_void_p, ct.c_void_p, ct.POINTER(ct.c_char_p), ct.POINTER(ct.c_char_p), ct.POINTER(FC.Bool))
+if hasattr(fc, "FcConfigFileInfoIterInit") :
+    fc.FcConfigFileInfoIterInit.restype = None
+    fc.FcConfigFileInfoIterInit.argtypes = (ct.c_void_p, ct.c_void_p)
+    fc.FcConfigFileInfoIterNext.restype = FC.Bool
+    fc.FcConfigFileInfoIterNext.argtypes = (ct.c_void_p, ct.c_void_p)
+    fc.FcConfigFileInfoIterGet.restype = FC.Bool
+    fc.FcConfigFileInfoIterGet.argtypes = (ct.c_void_p, ct.c_void_p, ct.POINTER(ct.c_char_p), ct.POINTER(ct.c_char_p), ct.POINTER(FC.Bool))
+#end if
 
 fc.FcCharSetCreate.restype = ct.c_void_p
 fc.FcCharSetCreate.argtypes = ()
@@ -1473,40 +1475,44 @@ class Config :
         fc.FcConfigSetSysRoot(self._fcobj, newroot.encode())
     #end sysroot
 
-    def iter_info(self) :
-        "iterates over the configuration file information."
-        iter = FC.ConfigFileInfoIter()
-        c_name = ct.POINTER(ct.c_char_p)(ct.cast(None, ct.c_char_p))
-        c_description = ct.POINTER(ct.c_char_p)(ct.cast(None, ct.c_char_p))
-        c_enabled = FC.Bool()
-        fc.FcConfigFileInfoIterInit(self._fcobj, ct.byref(iter))
-        while True :
-            if fc.FcConfigFileInfoIterGet \
-                  (
-                    self._fcobj,
-                    ct.byref(iter),
-                    c_name,
-                    c_description,
-                    c_enabled
-                  ) \
-            :
-                yield \
-                    {
-                        "name" :
-                            (lambda : None, lambda : c_name.contents.value.decode())
-                            [c_name.contents != None](),
-                        "description" :
-                            (lambda : None, lambda : c_description.contents.value.decode())
-                            [c_description.contents != None](),
-                        "enabled" : bool(c_enabled.value),
-                    }
-            else :
-                pass # happens after last successful call to FcConfigFileInfoIterNext!?
-            #end if
-            if not fc.FcConfigFileInfoIterNext(self._fcobj, ct.byref(iter)) :
-                break
-        #end while
-    #end iter_info
+    if hasattr(fc, "FcConfigFileInfoIterInit") :
+
+        def iter_info(self) :
+            "iterates over the configuration file information."
+            iter = FC.ConfigFileInfoIter()
+            c_name = ct.POINTER(ct.c_char_p)(ct.cast(None, ct.c_char_p))
+            c_description = ct.POINTER(ct.c_char_p)(ct.cast(None, ct.c_char_p))
+            c_enabled = FC.Bool()
+            fc.FcConfigFileInfoIterInit(self._fcobj, ct.byref(iter))
+            while True :
+                if fc.FcConfigFileInfoIterGet \
+                      (
+                        self._fcobj,
+                        ct.byref(iter),
+                        c_name,
+                        c_description,
+                        c_enabled
+                      ) \
+                :
+                    yield \
+                        {
+                            "name" :
+                                (lambda : None, lambda : c_name.contents.value.decode())
+                                [c_name.contents != None](),
+                            "description" :
+                                (lambda : None, lambda : c_description.contents.value.decode())
+                                [c_description.contents != None](),
+                            "enabled" : bool(c_enabled.value),
+                        }
+                else :
+                    pass # happens after last successful call to FcConfigFileInfoIterNext!?
+                #end if
+                if not fc.FcConfigFileInfoIterNext(self._fcobj, ct.byref(iter)) :
+                    break
+            #end while
+        #end iter_info
+
+    #end if
 
     def font_set_list(self, sets, pat, props) :
         if not isinstance(pat, Pattern) :
