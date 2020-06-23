@@ -807,22 +807,24 @@ fc.FcRangeCopy.argtypes = (ct.c_void_p,)
 fc.FcRangeGetDouble.restype = FC.Bool
 fc.FcRangeGetDouble.argtypes = (ct.c_void_p, ct.POINTER(ct.c_double), ct.POINTER(ct.c_double))
 
-fc.FcPatternIterStart.restype = None
-fc.FcPatternIterStart.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter))
-fc.FcPatternIterNext.restype = FC.Bool
-fc.FcPatternIterNext.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter))
-fc.FcPatternIterEqual.restype = FC.Bool
-fc.FcPatternIterEqual.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter), ct.c_void_p, ct.POINTER(FC.PatternIter))
-fc.FcPatternFindIter.restype = FC.Bool
-fc.FcPatternFindIter.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter), ct.c_char_p)
-fc.FcPatternIterIsValid.restype = FC.Bool
-fc.FcPatternIterIsValid.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter))
-fc.FcPatternIterGetObject.restype = ct.c_char_p
-fc.FcPatternIterGetObject.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter))
-fc.FcPatternIterValueCount.restype = ct.c_int
-fc.FcPatternIterValueCount.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter))
-fc.FcPatternIterGetValue.restype = ct.c_uint
-fc.FcPatternIterGetValue.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter), ct.c_int, ct.POINTER(FC.Value), ct.POINTER(ct.c_uint))
+if hasattr(fc, "FcPatternIterStart") :
+    fc.FcPatternIterStart.restype = None
+    fc.FcPatternIterStart.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter))
+    fc.FcPatternIterNext.restype = FC.Bool
+    fc.FcPatternIterNext.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter))
+    fc.FcPatternIterEqual.restype = FC.Bool
+    fc.FcPatternIterEqual.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter), ct.c_void_p, ct.POINTER(FC.PatternIter))
+    fc.FcPatternFindIter.restype = FC.Bool
+    fc.FcPatternFindIter.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter), ct.c_char_p)
+    fc.FcPatternIterIsValid.restype = FC.Bool
+    fc.FcPatternIterIsValid.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter))
+    fc.FcPatternIterGetObject.restype = ct.c_char_p
+    fc.FcPatternIterGetObject.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter))
+    fc.FcPatternIterValueCount.restype = ct.c_int
+    fc.FcPatternIterValueCount.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter))
+    fc.FcPatternIterGetValue.restype = ct.c_uint
+    fc.FcPatternIterGetValue.argtypes = (ct.c_void_p, ct.POINTER(FC.PatternIter), ct.c_int, ct.POINTER(FC.Value), ct.POINTER(ct.c_uint))
+#end if
 
 fc.FcWeightFromOpenType.restype = ct.c_int
 fc.FcWeightFromOpenType.argtypes = (ct.c_int,)
@@ -830,8 +832,10 @@ fc.FcWeightFromOpenTypeDouble.restype = ct.c_double
 fc.FcWeightFromOpenTypeDouble.argtypes = (ct.c_double,)
 fc.FcWeightToOpenType.restype = ct.c_int
 fc.FcWeightToOpenType.argtypes = (ct.c_int,)
-fc.FcWeightToOpenTypeDouble.restype = ct.c_double
-fc.FcWeightToOpenTypeDouble.argtypes = (ct.c_double,)
+if hasattr(fc, "FcWeightToOpenTypeDouble") :
+    fc.FcWeightToOpenTypeDouble.restype = ct.c_double
+    fc.FcWeightToOpenTypeDouble.argtypes = (ct.c_double,)
+#end if
 
 fc.FcStrCopy.restype = ct.c_char_p
 fc.FcStrCopy.argtypes = (ct.c_void_p,)
@@ -2125,36 +2129,40 @@ class Pattern :
         #end for
     #end iter_props
 
-    def iter_object_with_values(self) :
-        iter = FC.PatternIter()
-        c_value = FC.Value()
-        c_binding = ct.c_uint()
-        fc.FcPatternIterStart(self._fcobj, ct.byref(iter))
-        while True :
-            name = fc.FcPatternIterGetObject(self._fcobj, ct.byref(iter))
-            if name == None :
-                break
-            nr_values = fc.FcPatternIterValueCount(self._fcobj, ct.byref(iter))
-            values = []
-            for i in range(nr_values) :
-                result = fc.FcPatternIterGetValue \
-                  (
-                    self._fcobj,
-                    ct.byref(iter),
-                    i,
-                    ct.byref(c_value),
-                    ct.byref(c_binding)
-                  )
-                if result != 0 :
-                    raise RuntimeError("FcPatternIterGetValue returned %d" % result)
-                #end if
-                values.append({"value" : decode_value(c_value), "binding" : c_binding.value})
-            #end for
-            yield {"name" : name.decode(), "values" : values}
-            if not fc.FcPatternIterNext(self._fcobj, ct.byref(iter)) :
-                break
-        #end while
-    #end iter_object_with_values
+    if hasattr(fc, "FcPatternIterStart") :
+
+        def iter_object_with_values(self) :
+            iter = FC.PatternIter()
+            c_value = FC.Value()
+            c_binding = ct.c_uint()
+            fc.FcPatternIterStart(self._fcobj, ct.byref(iter))
+            while True :
+                name = fc.FcPatternIterGetObject(self._fcobj, ct.byref(iter))
+                if name == None :
+                    break
+                nr_values = fc.FcPatternIterValueCount(self._fcobj, ct.byref(iter))
+                values = []
+                for i in range(nr_values) :
+                    result = fc.FcPatternIterGetValue \
+                      (
+                        self._fcobj,
+                        ct.byref(iter),
+                        i,
+                        ct.byref(c_value),
+                        ct.byref(c_binding)
+                      )
+                    if result != 0 :
+                        raise RuntimeError("FcPatternIterGetValue returned %d" % result)
+                    #end if
+                    values.append({"value" : decode_value(c_value), "binding" : c_binding.value})
+                #end for
+                yield {"name" : name.decode(), "values" : values}
+                if not fc.FcPatternIterNext(self._fcobj, ct.byref(iter)) :
+                    break
+            #end while
+        #end iter_object_with_values
+
+    #end if
 
 #end Pattern
 
