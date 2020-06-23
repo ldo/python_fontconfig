@@ -628,8 +628,10 @@ fc.FcDefaultSubstitute.argtypes = (ct.c_void_p,)
 
 fc.FcFreeTypeQuery.restype = ct.c_void_p
 fc.FcFreeTypeQuery.argtypes = (ct.c_char_p, ct.c_int, ct.c_void_p, ct.POINTER(ct.c_int))
-fc.FcFreeTypeQueryAll.restype = ct.c_uint
-fc.FcFreeTypeQueryAll.argtypes = (ct.c_char_p, ct.c_uint, ct.c_void_p, ct.POINTER(ct.c_int), ct.c_void_p)
+if hasattr(fc, "FcFreeTypeQueryAll") :
+    fc.FcFreeTypeQueryAll.restype = ct.c_uint
+    fc.FcFreeTypeQueryAll.argtypes = (ct.c_char_p, ct.c_uint, ct.c_void_p, ct.POINTER(ct.c_int), ct.c_void_p)
+#end if
 
 fc.FcFontSetCreate.restype = ct.c_void_p
 fc.FcFontSetCreate.argtypes = ()
