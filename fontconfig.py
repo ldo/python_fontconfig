@@ -830,11 +830,11 @@ if hasattr(fc, "FcPatternIterStart") :
 
 fc.FcWeightFromOpenType.restype = ct.c_int
 fc.FcWeightFromOpenType.argtypes = (ct.c_int,)
-fc.FcWeightFromOpenTypeDouble.restype = ct.c_double
-fc.FcWeightFromOpenTypeDouble.argtypes = (ct.c_double,)
 fc.FcWeightToOpenType.restype = ct.c_int
 fc.FcWeightToOpenType.argtypes = (ct.c_int,)
-if hasattr(fc, "FcWeightToOpenTypeDouble") :
+if hasattr(fc, "FcWeightFromOpenTypeDouble") :
+    fc.FcWeightFromOpenTypeDouble.restype = ct.c_double
+    fc.FcWeightFromOpenTypeDouble.argtypes = (ct.c_double,)
     fc.FcWeightToOpenTypeDouble.restype = ct.c_double
     fc.FcWeightToOpenTypeDouble.argtypes = (ct.c_double,)
 #end if
@@ -948,29 +948,56 @@ def lang_normalize(langname) :
         result
 #end lang_normalize
 
-def weight_from_opentype(ot_weight) :
-    if isinstance(ot_weight, int) :
-        result = fc.FcWeightFromOpenType(ot_weight)
-    elif isinstance(ot_weight, float) :
-        result = fc.FcWeightFromOpenTypeDouble(ot_weight)
-    else :
-        raise TypeError("weight must be int or float")
-    #end if
-    return \
-        result
-#end weight_from_opentype
+if hasattr(fc, "FcWeightFromOpenTypeDouble") :
 
-def weight_to_opentype(fc_weight) :
-    if isinstance(fc_weight, int) :
-        result = fc.FcWeightToOpenType(fc_weight)
-    elif isinstance(fc_weight, float) :
-        result = fc.FcWeightToOpenTypeDouble(fc_weight)
-    else :
-        raise TypeError("weight must be int or float")
-    #end if
-    return \
-        result
-#end weight_to_opentype
+    def weight_from_opentype(ot_weight) :
+        if isinstance(ot_weight, int) :
+            result = fc.FcWeightFromOpenType(ot_weight)
+        elif isinstance(ot_weight, float) :
+            result = fc.FcWeightFromOpenTypeDouble(ot_weight)
+        else :
+            raise TypeError("weight must be int or float")
+        #end if
+        return \
+            result
+    #end weight_from_opentype
+
+    def weight_to_opentype(fc_weight) :
+        if isinstance(fc_weight, int) :
+            result = fc.FcWeightToOpenType(fc_weight)
+        elif isinstance(fc_weight, float) :
+            result = fc.FcWeightToOpenTypeDouble(fc_weight)
+        else :
+            raise TypeError("weight must be int or float")
+        #end if
+        return \
+            result
+    #end weight_to_opentype
+
+else :
+
+    def weight_from_opentype(ot_weight) :
+        if isinstance(ot_weight, int) :
+            result = fc.FcWeightFromOpenType(ot_weight)
+        else :
+            raise TypeError("weight must be int")
+        #end if
+        return \
+            result
+    #end weight_from_opentype
+
+    def weight_to_opentype(fc_weight) :
+        if isinstance(fc_weight, int) :
+            result = fc.FcWeightToOpenType(fc_weight)
+        else :
+            raise TypeError("weight must be int")
+        #end if
+        return \
+            result
+    #end weight_to_opentype
+
+#end if
+
 
 def decode_value(value) :
     if not isinstance(value, FC.Value) :
