@@ -739,8 +739,10 @@ fc.FcPatternFilter.argtypes = (ct.c_void_p, ct.c_void_p)
 #fc.FcValueSave.argtypes = (FC.Value,)
 fc.FcPatternDestroy.restype = None
 fc.FcPatternDestroy.argtypes = (ct.c_void_p,)
-fc.FcPatternObjectCount.restype = ct.c_int
-fc.FcPatternObjectCount.argtypes = (ct.c_void_p,)
+if hasattr(fc, "FcPatternObjectCount") :
+    fc.FcPatternObjectCount.restype = ct.c_int
+    fc.FcPatternObjectCount.argtypes = (ct.c_void_p,)
+#end if
 fc.FcPatternEqual.restype = FC.Bool
 fc.FcPatternEqual.argtypes = (ct.c_void_p, ct.c_void_p)
 fc.FcPatternEqualSubset.restype = FC.Bool
