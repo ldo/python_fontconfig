@@ -2193,6 +2193,41 @@ class Pattern :
 
     #end if
 
+    def __repr__(self) :
+        props = \
+          (
+                tuple
+                  (
+                    q
+                    for q in (self.get(PROP.FAMILY, 0)[0],)
+                    if q != None
+                  )
+            +
+                tuple
+                  (
+                    ":%s=%s" % (p.value, q)
+                    for p in
+                        (
+                            PROP.STYLE,
+                            PROP.SLANT,
+                            PROP.WEIGHT,
+                            PROP.WIDTH,
+                            PROP.FILE,
+                          # can add more if desired
+                        )
+                    for q in (self.get(p, 0)[0],)
+                    if q != None
+                  )
+          )
+        return \
+          (
+            (
+                super().__repr__,
+                lambda : "<fontconfig.Pattern for “%s”>" % "".join(props),
+            )[len(props) != 0]()
+          )
+    #end __repr__
+
 #end Pattern
 
 class StrSet :
