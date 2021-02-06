@@ -258,7 +258,6 @@ class FC :
             ("type", ct.c_uint), # Type
             ("u", ValUnion),
         ]
-    ValUnion
 
     class FontSet(ct.Structure) :
         _fields_ = \
