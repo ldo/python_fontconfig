@@ -997,7 +997,6 @@ else :
 
 #end if
 
-
 def decode_value(value) :
     if not isinstance(value, FC.Value) :
         raise TypeError("value must be an FC.Value")
