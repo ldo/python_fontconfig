@@ -1063,7 +1063,7 @@ class LangSet :
 
     def copy(self) :
         return \
-            celf(fc.FcLangSetCopy(self._fcobj), True)
+            type(self)(fc.FcLangSetCopy(self._fcobj), True)
     #end copy
 
     def add(self, lang) :
