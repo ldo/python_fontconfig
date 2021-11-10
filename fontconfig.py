@@ -1750,7 +1750,6 @@ class CharSet :
                 for j in range(32) :
                     if 1 << j & page[i] != 0 :
                         result.add(base + i * 32 + j)
-                        got_one = True
                     #end if
                 #end for
             #end for
