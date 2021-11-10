@@ -1368,8 +1368,17 @@ class Config :
 
     @staticmethod
     def file_name(name) :
+        if name != None :
+            c_name = name.encode()
+        else :
+            c_name = None
+        #end if
+        result = fc.FcConfigFilename(c_name)
+        if result != None :
+            result = result.decode()
+        #end if
         return \
-            fc.FcConfigFilename(name.encode()).decode() # automatically stops at NUL?
+            result
     #end file_name
 
     @classmethod
