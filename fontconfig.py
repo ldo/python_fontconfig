@@ -1352,8 +1352,12 @@ class Config :
 
     @staticmethod
     def home() :
+        result = fc.FcConfigHome()
+        if result != None :
+            result = result.decode()
+        #end if
         return \
-            fc.FcConfigHome().decode() # automatically stops at NUL?
+            result
     #end home
 
     @staticmethod
