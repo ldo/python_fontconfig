@@ -3,7 +3,7 @@ A ctypes-based binding for the Fontconfig API, for Python
 3.4 or later.
 """
 #+
-# Copyright 2016-2019 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>.
+# Copyright 2016-2021 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>.
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -1386,6 +1386,20 @@ class Config :
         return \
             celf(fc.FcConfigCreate())
     #end create
+
+    @classmethod
+    def init_load(celf, and_fonts) :
+        "creates a new instance of the default config, optionally including" \
+        " information about the actual available fonts."
+        return \
+            celf \
+              (
+                (
+                    fc.FcInitLoadConfig,
+                    fc.FcInitLoadConfigAndFonts,
+                )[and_fonts]()
+              )
+    #end init_load
 
     def set_current(self) :
         if fc.FcConfigSetCurrent(self._fcobj) == 0 :
