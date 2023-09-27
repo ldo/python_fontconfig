@@ -20,10 +20,10 @@ any of my Python wrappers for other major parts of the Linux
 typography stack, namely
 
 * Qahirah ([GitLab](https://gitlab.com/ldo/qahirah),
-  [GitHub](https://github.com/ldo/qahirah)) -- my binding for the
+  [BitBucket](https://bitbucket.org/ldo17/qahirah)) -- my binding for the
   [Cairo](https://www.cairographics.org/) graphics library
 * python_freetype ([GitLab](https://gitlab.com/ldo/python_freetype),
-  [GitHub](https://github.com/ldo/python_freetype)) -- my binding for
+  [BitBucket](https://bitbucket.org/ldo17/python_freetype)) -- my binding for
   [FreeType](https://www.freetype.org/)
 
 then these already include their own mini-wrappers for Fontconfig,
@@ -258,7 +258,7 @@ missing from the font’s character set:
 
 For some example scripts, see my python_fontconfig_examples repository
 ([GitLab](https://gitlab.com/ldo/python_fontconfig_examples),
-[GitHub](https://github.com/ldo/python_fontconfig_examples)).
+[BitBucket](https://bitbucket.org/ldo17/python_fontconfig_examples)).
 
 Lawrence D'Oliveiro <ldo@geek-central.gen.nz>
-2020 May 20
+2023 September 28
